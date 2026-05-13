@@ -1,77 +1,82 @@
 import { Plus, Search } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
+import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 
 const columns = [
-  { key: "department", label: "Department" },
-  { key: "coordinator", label: "Research Center Coordinator" },
+  { key: "name", label: "Coordinator" },
   { key: "email", label: "Email" },
+  { key: "department", label: "Department" },
+  { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
 ];
 
 const rows = [
   {
     id: "1",
-    department: "Computer Science",
-    coordinator: "Dr. John Smith",
-    email: "john.smith@univ.edu",
+    name: "Priya Sharma",
+    email: "priya.sharma@univ.edu",
+    department: "MCA - Master of Computer Applications",
+    status: <StatusBadge status="Active" />,
     action: (
       <button
         type="button"
         className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
       >
-        View
+        Manage
       </button>
     ),
   },
   {
     id: "2",
-    department: "Information Technology",
-    coordinator: "Dr. Emily Davis",
-    email: "emily.davis@univ.edu",
+    name: "Kiran Nair",
+    email: "kiran.nair@univ.edu",
+    department: "BCA - Bachelor of Computer Applications",
+    status: <StatusBadge status="Active" />,
     action: (
       <button
         type="button"
         className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
       >
-        View
+        Manage
       </button>
     ),
   },
   {
     id: "3",
+    name: "Anita George",
+    email: "anita.george@univ.edu",
     department: "Electronics",
-    coordinator: "Dr. Michael Brown",
-    email: "michael.brown@univ.edu",
+    status: <StatusBadge status="Inactive" />,
     action: (
       <button
         type="button"
         className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
       >
-        View
+        Manage
       </button>
     ),
   },
 ];
 
-export default function AdminDepartmentsPage() {
+export default function AdminCoordinatorsPage() {
   return (
     <PageLayout
-      title="Departments"
+      title="Research Center Coordinators"
       userName="Admin"
       roleLabel="Administrator"
       navItems={adminNav}
-      activeItem="Departments"
+      activeItem="Coordinators"
     >
       <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4">
           <div>
             <h2 className="font-display text-lg text-[color:var(--maroon-900)]">
-              Departments
+              Coordinators
             </h2>
             <p className="text-sm text-slate-500">
-              Maintain department records and coordinator assignments.
+              Add and manage research center coordinators for each department.
             </p>
           </div>
           <button
@@ -79,14 +84,19 @@ export default function AdminDepartmentsPage() {
             className="inline-flex items-center gap-2 rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm"
           >
             <Plus className="h-4 w-4" />
-            Add Department
+            Add Coordinator
           </button>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
           <div className="flex flex-1 items-center gap-2 rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-xs text-slate-500">
             <Search className="h-4 w-4" />
-            <span>Search departments...</span>
+            <span>Search coordinators...</span>
           </div>
+          <select className="rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-xs font-semibold text-slate-600">
+            <option>All Status</option>
+            <option>Active</option>
+            <option>Inactive</option>
+          </select>
         </div>
         <div className="mt-4">
           <DataTable columns={columns} rows={rows} />

@@ -62,6 +62,22 @@ const rows = [
       </button>
     ),
   },
+  {
+    id: "4",
+    name: "Priya Sharma",
+    email: "priya.sharma@univ.edu",
+    role: "Research Center Coordinator",
+    department: "MCA - Master of Computer Applications",
+    status: <StatusBadge status="Active" />,
+    action: (
+      <button
+        type="button"
+        className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
+      >
+        View
+      </button>
+    ),
+  },
 ];
 
 export default function AdminUsersPage() {
@@ -80,7 +96,7 @@ export default function AdminUsersPage() {
               Users
             </h2>
             <p className="text-sm text-slate-500">
-              Manage scholars, faculty, and admin accounts.
+              Manage scholars, faculty, coordinators, and admin accounts.
             </p>
           </div>
           <button
@@ -100,6 +116,7 @@ export default function AdminUsersPage() {
             <option>All Roles</option>
             <option>Scholar</option>
             <option>Faculty</option>
+            <option>Research Center Coordinator</option>
             <option>Admin</option>
           </select>
         </div>

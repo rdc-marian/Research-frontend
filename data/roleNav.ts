@@ -29,6 +29,7 @@ export const facultyNav: NavItem[] = [
 export const adminNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin" },
   { label: "Users", icon: Users, href: "/admin/users" },
+  { label: "Coordinators", icon: User, href: "/admin/coordinators" },
   { label: "Departments", icon: Building2, href: "/admin/departments" },
   { label: "Submissions", icon: FileText, href: "/admin/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/admin/approvals" },
