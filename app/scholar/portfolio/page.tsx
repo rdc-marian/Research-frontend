@@ -78,47 +78,18 @@ export default function ScholarPortfolioDashboard() {
 
     const load = async () => {
       try {
-        console.log("Loading state: true");
         setLoading(true);
         setError(null);
         
-        // Ensure we are using the correct base URL
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:5000/api";
-        const url = `${baseUrl}/portfolio/summary?scholarId=${user._id}`;
-        console.log("API URL:", url);
-        
-        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
-        
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            "Accept": "application/json",
-            "Authorization": token ? `Bearer ${token}` : ""
-          }
-        });
-        
-        console.log("Response status:", response.status);
-        
-        const text = await response.text();
-        console.log("Response body:", text);
-        
-        if (!response.ok) {
-          throw new Error(`Request failed with status ${response.status}: ${text}`);
-        }
-        
-        const res = JSON.parse(text) as SummaryResponse;
-        
+        const res = await apiGet<SummaryResponse>(`/portfolio/summary?scholarId=${user._id}`);
         if (!isMounted) return;
         setStats(res.summary);
       } catch (err) {
-        console.error("API Error:", err);
         if (!isMounted) return;
         const message = err instanceof Error ? err.message : "Failed to load summary stats";
         setError(message);
       } finally {
-        console.log("Executing finally block");
         if (isMounted) {
-          console.log("Loading state: false");
           setLoading(false);
         }
       }
