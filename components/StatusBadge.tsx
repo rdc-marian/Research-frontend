@@ -9,6 +9,8 @@ const statusStyles: Record<string, string> = {
   "In Review": "border-amber-200 bg-amber-50 text-amber-700",
   Active: "border-emerald-200 bg-emerald-50 text-emerald-700",
   Inactive: "border-slate-200 bg-slate-100 text-slate-500",
+  ApprovedByGuide: "border-amber-200 bg-amber-50 text-amber-700",
+  ApprovedByCoordinator: "border-emerald-200 bg-emerald-50 text-emerald-700",
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {

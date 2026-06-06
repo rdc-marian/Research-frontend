@@ -1,3 +1,5 @@
+import Cookies from "js-cookie";
+
 export type ApiListResponse<T> = {
   items: T[];
 };
@@ -8,6 +10,11 @@ export type ApiItemResponse<T> = {
 
 export type ApiMessageResponse = {
   message: string;
+};
+
+const getAuthHeaders = (): Record<string, string> => {
+  const token = typeof window !== "undefined" ? Cookies.get("token") : undefined;
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -47,6 +54,7 @@ export const apiGet = async <T>(path: string, init?: RequestInit): Promise<T> =>
     method: "GET",
     headers: {
       Accept: "application/json",
+      ...getAuthHeaders(),
       ...(init?.headers ?? {}),
     },
   });
@@ -71,6 +79,7 @@ export const apiPostJson = async <
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify(body),
   });
@@ -97,6 +106,7 @@ export const apiPatchJson = async <
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      ...getAuthHeaders(),
       ...(init?.headers ?? {}),
     },
     body: JSON.stringify(body),
@@ -115,6 +125,7 @@ export const apiPostForm = async <T>(path: string, body: FormData): Promise<T> =
     method: "POST",
     headers: {
       Accept: "application/json",
+      ...getAuthHeaders(),
     },
     body,
   });
@@ -132,6 +143,7 @@ export const apiPatchForm = async <T>(path: string, body: FormData): Promise<T> 
     method: "PATCH",
     headers: {
       Accept: "application/json",
+      ...getAuthHeaders(),
     },
     body,
   });
@@ -150,6 +162,7 @@ export const apiDelete = async <T>(path: string, init?: RequestInit): Promise<T>
     method: "DELETE",
     headers: {
       Accept: "application/json",
+      ...getAuthHeaders(),
       ...(init?.headers ?? {}),
     },
   });
