@@ -46,7 +46,7 @@ const categoryConfigs: Record<
   qualifications: {
     title: "Qualifications",
     desc: "Your academic background and degrees.",
-    apiPath: "/api/qualifications",
+    apiPath: "/qualifications",
     columns: [
       { key: "degree", label: "Degree" },
       { key: "subject", label: "Subject" },
@@ -67,7 +67,7 @@ const categoryConfigs: Record<
   publications: {
     title: "Publications",
     desc: "Your research publications in journals, books, etc.",
-    apiPath: "/api/publications",
+    apiPath: "/publications",
     columns: [
       { key: "title", label: "Title" },
       { key: "authors", label: "Authors" },
@@ -88,7 +88,7 @@ const categoryConfigs: Record<
   conferences: {
     title: "Conferences",
     desc: "Your conference attendances and paper presentations.",
-    apiPath: "/api/conferences",
+    apiPath: "/conferences",
     columns: [
       { key: "title", label: "Conference" },
       { key: "paperTitle", label: "Paper Title" },
@@ -109,7 +109,7 @@ const categoryConfigs: Record<
   patents: {
     title: "Patents",
     desc: "Patents filed, published, or granted.",
-    apiPath: "/api/patents",
+    apiPath: "/patents",
     columns: [
       { key: "title", label: "Title" },
       { key: "applicationNumber", label: "App Number" },
@@ -130,7 +130,7 @@ const categoryConfigs: Record<
   workshops: {
     title: "Workshops & FDPs",
     desc: "Seminars, workshops, FDPs organized or attended.",
-    apiPath: "/api/workshops",
+    apiPath: "/workshops",
     columns: [
       { key: "title", label: "Workshop Title" },
       { key: "role", label: "Role" },
@@ -151,7 +151,7 @@ const categoryConfigs: Record<
   memberships: {
     title: "Memberships",
     desc: "Your professional body memberships.",
-    apiPath: "/api/memberships",
+    apiPath: "/memberships",
     columns: [
       { key: "professionalBody", label: "Professional Body" },
       { key: "membershipNumber", label: "Membership No." },
@@ -170,7 +170,7 @@ const categoryConfigs: Record<
   scholarships: {
     title: "Scholarships & Fellowships",
     desc: "Fellowship awards, grants, and stipends.",
-    apiPath: "/api/scholarships",
+    apiPath: "/scholarships",
     columns: [
       { key: "name", label: "Fellowship Name" },
       { key: "sponsoringAgency", label: "Sponsoring Agency" },

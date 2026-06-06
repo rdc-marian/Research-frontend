@@ -90,13 +90,13 @@ function ScholarPortfolioFormContent() {
       try {
         setLoading(true);
         const apiPathMap: Record<string, string> = {
-          qualifications: `/api/qualifications/${itemId}`,
-          publications: `/api/publications/${itemId}`,
-          conferences: `/api/conferences/${itemId}`,
-          patents: `/api/patents/${itemId}`,
-          workshops: `/api/workshops/${itemId}`,
-          memberships: `/api/memberships/${itemId}`,
-          scholarships: `/api/scholarships/${itemId}`,
+          qualifications: `/qualifications/${itemId}`,
+          publications: `/publications/${itemId}`,
+          conferences: `/conferences/${itemId}`,
+          patents: `/patents/${itemId}`,
+          workshops: `/workshops/${itemId}`,
+          memberships: `/memberships/${itemId}`,
+          scholarships: `/scholarships/${itemId}`,
         };
         const res = await apiGet<{ item: Record<string, any> }>(apiPathMap[category]);
         if (!isMounted) return;
@@ -190,13 +190,13 @@ function ScholarPortfolioFormContent() {
       }
 
       const apiPathMap: Record<string, string> = {
-        qualifications: "/api/qualifications",
-        publications: "/api/publications",
-        conferences: "/api/conferences",
-        patents: "/api/patents",
-        workshops: "/api/workshops",
-        memberships: "/api/memberships",
-        scholarships: "/api/scholarships",
+        qualifications: "/qualifications",
+        publications: "/publications",
+        conferences: "/conferences",
+        patents: "/patents",
+        workshops: "/workshops",
+        memberships: "/memberships",
+        scholarships: "/scholarships",
       };
 
       const path = itemId ? `${apiPathMap[category]}/${itemId}` : apiPathMap[category];

@@ -59,7 +59,7 @@ export default function ScholarLeavesPage() {
     try {
       setLoading(true);
       setError(null);
-      const res = await apiGet<ApiListResponse<LeaveItem>>(`/api/leaves?scholarId=${user._id}`);
+      const res = await apiGet<ApiListResponse<LeaveItem>>(`/leaves?scholarId=${user._id}`);
       setLeaves(res.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load leave history");
@@ -107,7 +107,7 @@ export default function ScholarLeavesPage() {
         payload.append("file", file);
       }
 
-      await apiPostForm("/api/leaves", payload);
+      await apiPostForm("/leaves", payload);
       setShowApplyModal(false);
       // Reset form
       setStartDate("");
@@ -126,7 +126,7 @@ export default function ScholarLeavesPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to cancel/delete this leave request?")) return;
     try {
-      await apiDelete(`/api/leaves/${id}`);
+      await apiDelete(`/leaves/${id}`);
       loadLeaves();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete leave request");

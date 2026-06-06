@@ -35,6 +35,12 @@ type SummaryResponse = {
     memberships: CategorySummary;
     scholarships: CategorySummary;
     leaves: CategorySummary;
+    projects: CategorySummary;
+    guidance: CategorySummary;
+    grants: CategorySummary;
+    awards: CategorySummary;
+    consultancy: CategorySummary;
+    resourcePerson: CategorySummary;
   };
 };
 
@@ -47,31 +53,74 @@ const defaultStats = {
   memberships: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
   scholarships: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
   leaves: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
+  projects: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
+  guidance: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
+  grants: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
+  awards: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
+  consultancy: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
+  resourcePerson: { total: 0, Pending: 0, Approved: 0, Rejected: 0 },
 };
 
 export default function ScholarPortfolioDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(defaultStats);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?._id) return;
+    if (authLoading) return;
+    if (!user?._id) {
+      setLoading(false);
+      return;
+    }
+    
     let isMounted = true;
 
     const load = async () => {
       try {
+        console.log("Loading state: true");
         setLoading(true);
         setError(null);
-        const res = await apiGet<SummaryResponse>(`/api/portfolio/summary?scholarId=${user._id}`);
+        
+        // Ensure we are using the correct base URL
+        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "http://localhost:5000/api";
+        const url = `${baseUrl}/portfolio/summary?scholarId=${user._id}`;
+        console.log("API URL:", url);
+        
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+        
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "Authorization": token ? `Bearer ${token}` : ""
+          }
+        });
+        
+        console.log("Response status:", response.status);
+        
+        const text = await response.text();
+        console.log("Response body:", text);
+        
+        if (!response.ok) {
+          throw new Error(`Request failed with status ${response.status}: ${text}`);
+        }
+        
+        const res = JSON.parse(text) as SummaryResponse;
+        
         if (!isMounted) return;
         setStats(res.summary);
       } catch (err) {
+        console.error("API Error:", err);
         if (!isMounted) return;
         const message = err instanceof Error ? err.message : "Failed to load summary stats";
         setError(message);
       } finally {
-        if (isMounted) setLoading(false);
+        console.log("Executing finally block");
+        if (isMounted) {
+          console.log("Loading state: false");
+          setLoading(false);
+        }
       }
     };
 
@@ -80,7 +129,7 @@ export default function ScholarPortfolioDashboard() {
     return () => {
       isMounted = false;
     };
-  }, [user?._id]);
+  }, [user?._id, authLoading]);
 
   const categories = [
     {
@@ -130,6 +179,54 @@ export default function ScholarPortfolioDashboard() {
       icon: Users,
       color: "text-indigo-600 bg-indigo-50 border-indigo-100",
       href: "/scholar/portfolio/memberships",
+    },
+    {
+      key: "projects",
+      title: "Research Projects",
+      desc: "Funded and non-funded research projects.",
+      icon: BookOpen,
+      color: "text-orange-600 bg-orange-50 border-orange-100",
+      href: "/scholar/portfolio/projects",
+    },
+    {
+      key: "guidance",
+      title: "Research Guidance",
+      desc: "PhD, PG, and UG students guided.",
+      icon: Users,
+      color: "text-teal-600 bg-teal-50 border-teal-100",
+      href: "/scholar/portfolio/guidance",
+    },
+    {
+      key: "grants",
+      title: "Research Grants",
+      desc: "Grants received for research activities.",
+      icon: FileText,
+      color: "text-lime-600 bg-lime-50 border-lime-100",
+      href: "/scholar/portfolio/grants",
+    },
+    {
+      key: "awards",
+      title: "Awards & Recognitions",
+      desc: "Awards and honors received.",
+      icon: Award,
+      color: "text-yellow-600 bg-yellow-50 border-yellow-100",
+      href: "/scholar/portfolio/awards",
+    },
+    {
+      key: "consultancy",
+      title: "Consultancy",
+      desc: "Consultancy projects and activities.",
+      icon: ListCollapse,
+      color: "text-fuchsia-600 bg-fuchsia-50 border-fuchsia-100",
+      href: "/scholar/portfolio/consultancy",
+    },
+    {
+      key: "resourcePerson",
+      title: "Resource Person",
+      desc: "Invited talks and resource person activities.",
+      icon: Users,
+      color: "text-sky-600 bg-sky-50 border-sky-100",
+      href: "/scholar/portfolio/resource-person",
     },
     {
       key: "scholarships",
@@ -247,18 +344,24 @@ export default function ScholarPortfolioDashboard() {
 
                 <div className="mt-6 pt-4 border-t border-[color:var(--border)] flex items-center justify-between gap-4">
                   <div className="flex gap-4 text-xs">
-                    <div>
-                      <span className="font-semibold text-slate-700">{categoryStats.total}</span>
-                      <span className="text-slate-400 ml-1">Total</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-rose-600">{categoryStats.Pending}</span>
-                      <span className="text-slate-400 ml-1">Pending</span>
-                    </div>
-                    <div>
-                      <span className="font-semibold text-emerald-600">{categoryStats.Approved}</span>
-                      <span className="text-slate-400 ml-1">Approved</span>
-                    </div>
+                    {categoryStats.total === 0 ? (
+                      <span className="text-slate-500 italic">No records added yet</span>
+                    ) : (
+                      <>
+                        <div>
+                          <span className="font-semibold text-slate-700">{categoryStats.total}</span>
+                          <span className="text-slate-400 ml-1">Total</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-rose-600">{categoryStats.Pending}</span>
+                          <span className="text-slate-400 ml-1">Pending</span>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-emerald-600">{categoryStats.Approved}</span>
+                          <span className="text-slate-400 ml-1">Approved</span>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <Link
                     href={cat.href}
