@@ -17,7 +17,7 @@ type Department = {
 };
 
 const columns = [
-  { key: "department", label: "Department" },
+  { key: "department", label: "Research Center" },
   { key: "head", label: "Head / Coordinator" },
   { key: "email", label: "Email" },
   { key: "total", label: "Total Scholars" },
@@ -79,20 +79,20 @@ export default function CoordinatorDepartmentsPage() {
 
   return (
     <PageLayout
-      title="Departments"
+      title="Research Centers"
       userName="Dr. Priya Sharma"
       roleLabel="Coordinator"
       navItems={coordinatorNav}
-      activeItem="Departments"
+      activeItem="Research Centers"
     >
       <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4">
           <div>
             <h2 className="font-display text-lg text-[color:var(--maroon-900)]">
-              Departments
+              Research Centers
             </h2>
             <p className="text-sm text-slate-500">
-              Monitor departments under the research centre.
+              Monitor research centers under your coordination.
             </p>
           </div>
           <button
@@ -100,21 +100,21 @@ export default function CoordinatorDepartmentsPage() {
             className="inline-flex items-center gap-2 rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm"
           >
             <Plus className="h-4 w-4" />
-            Add Department
+            Add Research Center
           </button>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
           <div className="flex flex-1 items-center gap-2 rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-xs text-slate-500">
             <Search className="h-4 w-4" />
-            <span>Search departments...</span>
+            <span>Search research centers...</span>
           </div>
         </div>
         <div className="mt-4">
           {loading ? (
-            <p className="text-sm text-slate-500">Loading departments...</p>
+            <p className="text-sm text-slate-500">Loading research centers...</p>
           ) : error ? (
             <p className="text-sm text-red-600">
-              Failed to load departments: {error}
+              Failed to load research centers: {error}
             </p>
           ) : (
             <DataTable columns={columns} rows={rows} />

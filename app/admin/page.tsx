@@ -37,7 +37,7 @@ const defaultMetrics = [
 const submissionColumns = [
   { key: "title", label: "Title" },
   { key: "author", label: "Author" },
-  { key: "department", label: "Department" },
+  { key: "department", label: "Research Center" },
   { key: "status", label: "Status", align: "right" as const },
 ];
 

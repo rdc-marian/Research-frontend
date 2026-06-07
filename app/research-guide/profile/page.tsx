@@ -53,7 +53,7 @@ export default function ResearchGuideProfilePage() {
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="department">
-              Department
+              Research Center
             </label>
             <input id="department" className={inputClass} value={department} onChange={(e) => setDepartment(e.target.value)} />
           </div>

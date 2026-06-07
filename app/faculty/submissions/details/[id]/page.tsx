@@ -142,7 +142,7 @@ export default function FacultySubmissionDetailsPage() {
                 </div>
                 <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4">
                   <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                    <span>Department: {submission.department}</span>
+                    <span>Research Center: {submission.department}</span>
                     <StatusBadge status={submission.status} />
                   </div>
                 </div>

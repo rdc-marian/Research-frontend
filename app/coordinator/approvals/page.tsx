@@ -20,7 +20,7 @@ type Submission = {
 const columns = [
   { key: "title", label: "Title" },
   { key: "scholar", label: "Scholar" },
-  { key: "department", label: "Department" },
+  { key: "department", label: "Research Center" },
   { key: "submitted", label: "Submitted On" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },

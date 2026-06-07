@@ -36,7 +36,7 @@ export default function CoordinatorProfilePage() {
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="department">
-              Department
+              Research Center
             </label>
             <input id="department" className={inputClass} />
           </div>

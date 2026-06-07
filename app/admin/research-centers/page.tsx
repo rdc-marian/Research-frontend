@@ -31,7 +31,6 @@ type Coordinator = {
 const columns = [
   { key: "name", label: "Research Center" },
   { key: "code", label: "Code" },
-  { key: "department", label: "Department" },
   { key: "coordinator", label: "Coordinator" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
@@ -116,8 +115,8 @@ export default function AdminResearchCentersPage() {
       setSaveError(null);
       setSaveSuccess(null);
 
-      if (!formState.name.trim() || !formState.code.trim() || !formState.departmentId) {
-        setSaveError("Name, code, and department are required.");
+      if (!formState.name.trim() || !formState.code.trim()) {
+        setSaveError("Name and code are required.");
         setSaving(false);
         return;
       }
@@ -125,7 +124,7 @@ export default function AdminResearchCentersPage() {
       const payload = {
         name: formState.name.trim(),
         code: formState.code.trim(),
-        departmentId: formState.departmentId,
+        departmentId: departments[0]?._id || "default-dept-id",
         coordinatorId: formState.coordinatorId || undefined,
         status: formState.status || undefined,
       };
@@ -233,29 +232,7 @@ export default function AdminResearchCentersPage() {
                   placeholder="Center code"
                 />
               </div>
-              <div>
-                <label
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                  htmlFor="center-dept"
-                >
-                  Department
-                </label>
-                <select
-                  id="center-dept"
-                  className={inputClass}
-                  value={formState.departmentId}
-                  onChange={(event) =>
-                    handleFormChange("departmentId", event.target.value)
-                  }
-                >
-                  <option value="">Select department</option>
-                  {departments.map((dept) => (
-                    <option key={dept._id} value={dept._id}>
-                      {dept.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
               <div>
                 <label
                   className="text-xs font-semibold uppercase tracking-wide text-slate-500"

@@ -353,7 +353,22 @@ const handleMockRequest = async (
     }
     return { items };
   }
-
+  // Route: POST /users
+  if (method === "POST" && pathname === "/users") {
+    const newUser = {
+      _id: "user-" + Date.now(),
+      name: body.name,
+      email: body.email,
+      role: body.role || "scholar",
+      roles: body.roles || [body.role || "scholar"],
+      department: body.department || "MCA",
+      status: "Active",
+      guide: body.guideId ? { _id: body.guideId, name: db.users.find(u => u._id === body.guideId)?.name || "Unknown Guide" } : undefined
+    };
+    db.users.push(newUser);
+    saveDB(db);
+    return { item: newUser };
+  }
   // Route: GET /users/:id
   if (method === "GET" && pathname.startsWith("/users/")) {
     const id = pathname.substring(7);
@@ -370,6 +385,14 @@ const handleMockRequest = async (
     db.users[userIdx] = { ...db.users[userIdx], ...body };
     saveDB(db);
     return { item: db.users[userIdx] };
+  }
+
+  // Route: DELETE /users/:id
+  if (method === "DELETE" && pathname.startsWith("/users/")) {
+    const id = pathname.substring(7);
+    db.users = db.users.filter(u => u._id !== id);
+    saveDB(db);
+    return { message: "Success" };
   }
 
   // Route: GET /departments

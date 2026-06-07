@@ -236,7 +236,7 @@ export default function CoordinatorReportsPage() {
     >
       <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)]">
         <h2 className="font-display text-lg text-[color:var(--maroon-900)] font-bold">
-          Reports - {user?.department || "MCA"} Department
+          Reports - {user?.department || "MCA"} Research Center
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           Analytics and summaries for scholar achievements and leaves.

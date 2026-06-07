@@ -170,7 +170,7 @@ export default function AdminReportsPage() {
     if (reportType === "Publications Registry") {
       return [
         { key: "scholar", label: "Scholar" },
-        { key: "department", label: "Department" },
+        { key: "department", label: "Research Center" },
         { key: "title", label: "Title" },
         { key: "journal", label: "Journal" },
         { key: "date", label: "Publish Date" },
@@ -179,7 +179,7 @@ export default function AdminReportsPage() {
     } else if (reportType === "Patents Registry") {
       return [
         { key: "scholar", label: "Scholar" },
-        { key: "department", label: "Department" },
+        { key: "department", label: "Research Center" },
         { key: "title", label: "Title" },
         { key: "appNo", label: "App Number" },
         { key: "status", label: "Patent Status" },
@@ -188,7 +188,7 @@ export default function AdminReportsPage() {
     } else if (reportType === "Leaves Summary") {
       return [
         { key: "scholar", label: "Scholar" },
-        { key: "department", label: "Department" },
+        { key: "department", label: "Research Center" },
         { key: "type", label: "Leave Type" },
         { key: "days", label: "Days", align: "center" as const },
         { key: "status", label: "Status", align: "right" as const },
@@ -278,14 +278,14 @@ export default function AdminReportsPage() {
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Department
+              Research Center
             </label>
             <select
               className={inputClass}
               value={department}
               onChange={(event) => setDepartment(event.target.value)}
             >
-              <option value="">All Departments</option>
+              <option value="">All Research Centers</option>
               {departments.map((item) => (
                 <option key={item._id} value={item.name}>
                   {item.name}

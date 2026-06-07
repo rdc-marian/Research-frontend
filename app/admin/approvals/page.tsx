@@ -20,7 +20,7 @@ type Submission = {
 const columns = [
   { key: "title", label: "Title" },
   { key: "author", label: "Author" },
-  { key: "department", label: "Department" },
+  { key: "department", label: "Research Center" },
   { key: "submitted", label: "Submitted On" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
@@ -108,7 +108,7 @@ export default function AdminApprovalsPage() {
               Approvals
             </h2>
             <p className="text-sm text-slate-500">
-              Pending approval requests from departments.
+              Pending approval requests from Research Centers.
             </p>
           </div>
           <div className="flex items-center gap-2 rounded-full border border-[color:var(--border)] p-1">

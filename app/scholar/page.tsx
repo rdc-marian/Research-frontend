@@ -118,6 +118,11 @@ export default function ScholarDashboard() {
   const [showAddRowModal, setShowAddRowModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
+  // Custom delete confirmation modal state
+  const [deleteConfirmType, setDeleteConfirmType] = useState<"tab" | "row" | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string>("");
+  const [deleteTargetIndex, setDeleteTargetIndex] = useState<number>(-1);
+
   // Form states for creating custom tabs
   const [newTabLabel, setNewTabLabel] = useState("");
   const [newTabColumns, setNewTabColumns] = useState("");
@@ -360,25 +365,8 @@ export default function ScholarDashboard() {
   // Delete a custom tab
   const handleDeleteTab = (tabId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    const confirmDelete = window.confirm("Are you sure you want to delete this tab and all its records?");
-    if (!confirmDelete) return;
-
-    const updatedList = tabsList.filter(t => t.id !== tabId);
-    setTabsList(updatedList);
-    localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(updatedList));
-
-    const updatedData = { ...tabsData };
-    delete updatedData[tabId];
-    setTabsData(updatedData);
-    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
-
-    const updatedActive = activeTabs.filter(id => id !== tabId);
-    setActiveTabs(updatedActive);
-    localStorage.setItem("scholar_active_tabs", JSON.stringify(updatedActive));
-
-    if (selectedTab === tabId && updatedActive.length > 0) {
-      setSelectedTab(updatedActive[0]);
-    }
+    setDeleteConfirmType("tab");
+    setDeleteTargetId(tabId);
   };
 
   // Add new row of data to the active tab
@@ -405,14 +393,45 @@ export default function ScholarDashboard() {
 
   // Delete specific row from active tab
   const handleDeleteRow = (rowIdx: number) => {
-    const confirmDelete = window.confirm("Are you sure you want to delete this record?");
-    if (!confirmDelete) return;
+    if (!selectedTab) return;
+    setDeleteConfirmType("row");
+    setDeleteTargetIndex(rowIdx);
+  };
 
-    const currentRows = tabsData[selectedTab] || [];
-    const updatedRows = currentRows.filter((_, idx) => idx !== rowIdx);
-    const updatedData = { ...tabsData, [selectedTab]: updatedRows };
-    setTabsData(updatedData);
-    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+  // Perform actual deletion of tab or row from custom state confirmation
+  const executeDelete = () => {
+    if (deleteConfirmType === "tab") {
+      const tabId = deleteTargetId;
+      const updatedList = tabsList.filter(t => t.id !== tabId);
+      setTabsList(updatedList);
+      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(updatedList));
+
+      const updatedData = { ...tabsData };
+      delete updatedData[tabId];
+      setTabsData(updatedData);
+      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+
+      const updatedActive = activeTabs.filter(id => id !== tabId);
+      setActiveTabs(updatedActive);
+      localStorage.setItem("scholar_active_tabs", JSON.stringify(updatedActive));
+
+      if (selectedTab === tabId && updatedActive.length > 0) {
+        setSelectedTab(updatedActive[0]);
+      }
+    } else if (deleteConfirmType === "row") {
+      const rowIdx = deleteTargetIndex;
+      if (!selectedTab) return;
+
+      const currentRows = tabsData[selectedTab] || [];
+      const updatedRows = currentRows.filter((_, idx) => idx !== rowIdx);
+      const updatedData = { ...tabsData, [selectedTab]: updatedRows };
+      setTabsData(updatedData);
+      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+    }
+
+    setDeleteConfirmType(null);
+    setDeleteTargetId("");
+    setDeleteTargetIndex(-1);
   };
 
   const activeTabConfig = tabsList.find(t => t.id === selectedTab) || tabsList[0];
@@ -472,7 +491,7 @@ export default function ScholarDashboard() {
                 <span className="font-bold text-slate-800">{uniqueId}</span>
               </div>
               <div>
-                <span className="font-semibold text-slate-500">Department : </span>
+                <span className="font-semibold text-slate-500">Research Center : </span>
                 <span className="font-bold text-slate-800">{user?.department || "MCA"}</span>
               </div>
               <div>
@@ -666,7 +685,7 @@ export default function ScholarDashboard() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Department</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Research Center</label>
                   <input
                     type="text"
                     value={profileDept}
@@ -894,6 +913,47 @@ export default function ScholarDashboard() {
                 className="px-5 py-2 rounded-full bg-[#9B0302] hover:bg-[#800201] text-xs font-semibold text-white transition"
               >
                 Add Record
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Confirmation Dialog Overlay */}
+      {deleteConfirmType !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-100 text-center space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="mx-auto w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-800">
+                {deleteConfirmType === "tab" ? "Delete Category Tab?" : "Delete Record Row?"}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {deleteConfirmType === "tab" 
+                  ? "Are you sure you want to permanently delete this tab category and all its records? This action cannot be undone."
+                  : "Are you sure you want to permanently delete this record? This action cannot be undone."}
+              </p>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                id="cancel-delete-btn"
+                onClick={() => {
+                  setDeleteConfirmType(null);
+                  setDeleteTargetId("");
+                  setDeleteTargetIndex(-1);
+                }}
+                className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-600 rounded-lg transition"
+              >
+                Cancel
+              </button>
+              <button
+                id="confirm-delete-btn"
+                onClick={executeDelete}
+                className="flex-1 py-2 bg-[#9B0302] hover:bg-[#800201] text-xs font-semibold text-white rounded-lg transition"
+              >
+                Delete
               </button>
             </div>
           </div>

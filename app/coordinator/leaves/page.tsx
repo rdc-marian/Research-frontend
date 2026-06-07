@@ -188,11 +188,11 @@ export default function CoordinatorLeavesPage() {
 
   return (
     <PageLayout
-      title="Department Leaves"
+      title="Research Center Leaves"
       userName={user?.name || "Coordinator"}
       roleLabel={user?.role === "admin" ? "Administrator" : "Coordinator"}
       navItems={coordinatorNav}
-      activeItem="Department Leaves"
+      activeItem="Research Center Leaves"
     >
       <div className="space-y-6">
         <div>

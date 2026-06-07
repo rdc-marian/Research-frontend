@@ -98,7 +98,7 @@ export default function AdminLeavesPage() {
 
   const columns = [
     { key: "scholar", label: "Scholar Name" },
-    { key: "department", label: "Department" },
+    { key: "department", label: "Research Center" },
     { key: "type", label: "Leave Type" },
     { key: "dates", label: "Duration" },
     { key: "days", label: "Days", align: "center" as const },
@@ -192,7 +192,7 @@ export default function AdminLeavesPage() {
             Scholar Leaves Database
           </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Audit and manage all leave applications across all departments.
+            Audit and manage all leave applications across all Research Centers.
           </p>
         </div>
 

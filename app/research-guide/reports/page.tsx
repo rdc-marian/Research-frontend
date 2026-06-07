@@ -166,14 +166,14 @@ export default function ResearchGuideReportsPage() {
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Department
+              Research Center
             </label>
             <select
               className={inputClass}
               value={department}
               onChange={(event) => setDepartment(event.target.value)}
             >
-              <option value="">All Departments</option>
+              <option value="">All Research Centers</option>
               {departments.map((item) => (
                 <option key={item._id} value={item.name}>
                   {item.name}

@@ -19,7 +19,7 @@ type Coordinator = {
 const columns = [
   { key: "name", label: "Coordinator" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Department" },
+  { key: "department", label: "Research Center" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
 ];
@@ -90,7 +90,7 @@ export default function AdminCoordinatorsPage() {
           <div>
             <h2 className="font-display text-lg text-[color:var(--maroon-900)]">Coordinators</h2>
             <p className="text-sm text-slate-500">
-              Add and manage research center coordinators for each department.
+              Add and manage research center coordinators.
             </p>
           </div>
           <button

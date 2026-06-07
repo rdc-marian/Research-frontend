@@ -357,7 +357,6 @@ export default function AdminResearchCenterDetailsPage() {
               </h2>
               <div className="mt-2 flex flex-wrap gap-3 text-sm text-slate-500">
                 <span>Code: {center.code}</span>
-                <span>Department: {center.department?.name ?? "Unassigned"}</span>
                 <span>
                   Coordinator: {center.coordinator?.name ?? "Unassigned"}
                 </span>

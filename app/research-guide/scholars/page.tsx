@@ -21,7 +21,7 @@ type Scholar = {
 const columns = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Department" },
+  { key: "department", label: "Research Center" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
 ];

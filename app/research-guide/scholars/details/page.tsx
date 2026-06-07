@@ -120,7 +120,7 @@ function ResearchGuideScholarDetailsContent() {
                   <h2 className="font-display text-lg text-[color:var(--maroon-900)]">{scholar.name ?? "Unknown"}</h2>
                   <p className="text-sm text-slate-500">{scholar.email ?? "N/A"}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span>{scholar.department ?? "N/A"}</span>
+                    <span>{scholar.department ? `${scholar.department} Research Center` : "N/A"}</span>
                     <StatusBadge status={scholar.status ?? "Active"} />
                   </div>
                 </div>

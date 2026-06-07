@@ -76,7 +76,7 @@ export default function AdminScholarPortfoliosPage() {
   const columns = [
     { key: "name", label: "Scholar Name" },
     { key: "email", label: "Email ID" },
-    { key: "department", label: "Department" },
+    { key: "department", label: "Research Center" },
     { key: "guide", label: "Research Guide" },
     { key: "action", label: "Action", align: "right" as const },
   ];
@@ -155,7 +155,7 @@ export default function AdminScholarPortfoliosPage() {
                     {selectedScholar.name} - Research Portfolio
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Department: {selectedScholar.department} | Guide: {selectedScholar.guide?.name || "Unassigned"}
+                    Research Center: {selectedScholar.department} | Guide: {selectedScholar.guide?.name || "Unassigned"}
                   </p>
                 </div>
                 <button

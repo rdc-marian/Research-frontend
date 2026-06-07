@@ -33,7 +33,7 @@ const defaultMetrics = [
   { label: "MCA submissions", value: "0", icon: FileText },
   { label: "Pending approvals", value: "0", icon: ClipboardCheck },
   { label: "Approved papers", value: "0", icon: LayoutDashboard },
-  { label: "Department overview", value: "N/A", icon: NotebookText },
+  { label: "Research Center overview", value: "N/A", icon: NotebookText },
 ];
 
 const submissionColumns = [
@@ -100,7 +100,7 @@ export default function CoordinatorDashboard() {
             icon: LayoutDashboard,
           },
           {
-            label: "Department overview",
+            label: "Research Center overview",
             value: firstDepartment?.name ?? "N/A",
             icon: NotebookText,
           },
@@ -135,7 +135,7 @@ export default function CoordinatorDashboard() {
 
   return (
     <PageLayout
-      title="Research Centre Coordinator"
+      title="Research Center Coordinator"
       userName="Dr. Priya Sharma"
       roleLabel="Coordinator"
       navItems={coordinatorNav}
@@ -143,7 +143,7 @@ export default function CoordinatorDashboard() {
     >
       <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)]">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--maroon-700)]">
-          Department
+          Research Center
         </p>
         <h2 className="mt-2 font-display text-2xl text-[color:var(--maroon-900)]">
           {primaryDepartment?.name ?? "MCA - Master of Computer Applications"}
@@ -169,7 +169,7 @@ export default function CoordinatorDashboard() {
               MCA submissions
             </h2>
             <p className="text-sm text-slate-500">
-              Recent submissions across the MCA department.
+              Recent submissions across the MCA Research Center.
             </p>
           </div>
           <span className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]">

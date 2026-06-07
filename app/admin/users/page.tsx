@@ -45,7 +45,6 @@ const columns = [
   { key: "roles", label: "Roles" },
   { key: "researchCenter", label: "Research Center" },
   { key: "guide", label: "Guide" },
-  { key: "department", label: "Department" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
 ];
@@ -185,12 +184,13 @@ export default function AdminUsersPage() {
         return;
       }
 
+      const selectedCenter = researchCenters.find((c) => c._id === formState.researchCenterId);
       const payload = {
         name: formState.name.trim(),
         email: formState.email.trim(),
         role: primaryRole,
         roles: formState.roles,
-        department: formState.department.trim() || undefined,
+        department: selectedCenter ? selectedCenter.name : undefined,
         researchCenterId: requiresResearchCenter
           ? formState.researchCenterId
           : undefined,
@@ -348,24 +348,7 @@ export default function AdminUsersPage() {
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="user-department">
-                  Department
-                </label>
-                <select
-                  id="user-department"
-                  className={inputClass}
-                  value={formState.department}
-                  onChange={(event) => handleFormChange("department", event.target.value)}
-                >
-                  <option value="">Select department</option>
-                  {departments.map((department) => (
-                    <option key={department._id} value={department.name}>
-                      {department.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+
               {requiresResearchCenter ? (
                 <div>
                   <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="user-research-center">

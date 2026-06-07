@@ -53,7 +53,7 @@ export default function CoordinatorScholarPortfoliosPage() {
       const res = await apiGet<ApiListResponse<Scholar>>(path);
       setScholars(res.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load department scholars");
+      setError(err instanceof Error ? err.message : "Failed to load scholars");
     } finally {
       setLoading(false);
     }
@@ -138,7 +138,7 @@ export default function CoordinatorScholarPortfoliosPage() {
           <p className="text-sm text-slate-500 mt-1">
             {user?.role === "admin"
               ? "View and inspect research portfolios for all scholars in the institution."
-              : `View and inspect research portfolios for scholars in the ${user?.department || "MCA"} department.`}
+              : `View and inspect research portfolios for scholars in the ${user?.department || "MCA"} Research Center.`}
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export default function CoordinatorScholarPortfoliosPage() {
                     {selectedScholar.name} - Research Portfolio
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Department: {selectedScholar.department} | Guide: {selectedScholar.guide?.name || "Unassigned"}
+                    Research Center: {selectedScholar.department} | Guide: {selectedScholar.guide?.name || "Unassigned"}
                   </p>
                 </div>
                 <button

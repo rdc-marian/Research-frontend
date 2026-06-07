@@ -25,8 +25,6 @@ export const facultyNav: NavItem[] = [
   { label: "Scholars", icon: Users, href: "/faculty/scholars" },
   { label: "Submissions", icon: FileText, href: "/faculty/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/faculty/approvals" },
-  { label: "Reports", icon: NotebookText, href: "/faculty/reports" },
-  { label: "Profile", icon: User, href: "/faculty/profile" },
 ];
 
 export const researchGuideNav: NavItem[] = [
@@ -44,7 +42,6 @@ export const adminNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin" },
   { label: "Users", icon: Users, href: "/admin/users" },
   { label: "Coordinators", icon: User, href: "/admin/coordinators" },
-  { label: "Departments", icon: Building2, href: "/admin/departments" },
   { label: "Research Centers", icon: Building2, href: "/admin/research-centers" },
   { label: "Submissions", icon: FileText, href: "/admin/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/admin/approvals" },
@@ -56,11 +53,11 @@ export const adminNav: NavItem[] = [
 
 export const coordinatorNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/coordinator" },
-  { label: "Departments", icon: Building2, href: "/coordinator/departments" },
+  { label: "Research Centers", icon: Building2, href: "/coordinator/departments" },
   { label: "Submissions", icon: FileText, href: "/coordinator/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/coordinator/approvals" },
   { label: "Scholar Portfolios", icon: Award, href: "/coordinator/portfolios" },
-  { label: "Department Leaves", icon: Calendar, href: "/coordinator/leaves" },
+  { label: "Research Center Leaves", icon: Calendar, href: "/coordinator/leaves" },
   { label: "Reports", icon: NotebookText, href: "/coordinator/reports" },
   { label: "Profile", icon: User, href: "/coordinator/profile" },
 ];
