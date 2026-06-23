@@ -124,7 +124,7 @@ const DEFAULT_DB = {
       coordinator: { name: "Dr. Paulose V", email: "paulose@univ.edu" },
       department: { name: "Computer Science" }
     }
-  ],
+  ] as any[],
   leaves: [
     {
       _id: "leave-1",

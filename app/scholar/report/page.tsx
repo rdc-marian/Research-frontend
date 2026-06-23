@@ -39,7 +39,7 @@ export default function ScholarReportPage() {
 
       // Determine date range
       let start = new Date();
-      const end = new Date();
+      let end = new Date();
 
       if (timeFrame === "1month") {
         start.setMonth(end.getMonth() - 1);

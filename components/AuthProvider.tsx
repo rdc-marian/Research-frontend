@@ -13,6 +13,7 @@ export interface User {
   department?: string;
   researchCenter?: any;
   guide?: any;
+  status?: string;
 }
 
 interface AuthContextType {

@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { adminNav } from "@/data/roleNav";
 import { getMockIncentives, saveMockIncentives, IncentiveApplication } from "@/lib/mockIncentives";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function AdminIncentives() {
+  const { user } = useAuth();
   const [incentives, setIncentives] = useState<IncentiveApplication[]>([]);
   const [activeTab, setActiveTab] = useState<"Admin" | "Principal" | "Processing">("Admin");
 
@@ -40,7 +42,13 @@ export default function AdminIncentives() {
   const list = getFilteredList();
 
   return (
-    <PageLayout title="Incentives Management" navItems={adminNav} activeItem="Incentives">
+    <PageLayout
+      title="Incentives Management"
+      userName={user?.name || "Admin"}
+      roleLabel="Administrator"
+      navItems={adminNav}
+      activeItem="Incentives"
+    >
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Incentives Management</h2>

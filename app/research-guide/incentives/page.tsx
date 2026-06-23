@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { researchGuideNav } from "@/data/roleNav";
 import { getMockIncentives, saveMockIncentives, IncentiveApplication } from "@/lib/mockIncentives";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function GuideIncentives() {
+  const { user } = useAuth();
   const [incentives, setIncentives] = useState<IncentiveApplication[]>([]);
 
   useEffect(() => {
@@ -29,7 +31,13 @@ export default function GuideIncentives() {
   const pendingList = incentives.filter(i => i.status === "Pending Guide");
 
   return (
-    <PageLayout title="Incentives Approval" navItems={researchGuideNav} activeItem="Incentives">
+    <PageLayout
+      title="Incentives Approval"
+      userName={user?.name || "Research Guide"}
+      roleLabel="Research Guide"
+      navItems={researchGuideNav}
+      activeItem="Incentives"
+    >
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Incentives Approval</h2>

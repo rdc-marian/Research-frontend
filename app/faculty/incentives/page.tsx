@@ -90,7 +90,13 @@ export default function FacultyIncentives() {
   ];
 
   return (
-    <PageLayout title="Incentive Management" navItems={facultyNav} activeItem="Incentives">
+    <PageLayout
+      title="Incentive Management"
+      userName={user?.name || "Faculty User"}
+      roleLabel="Faculty"
+      navItems={facultyNav}
+      activeItem="Incentives"
+    >
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-xl font-bold text-slate-900">My Incentives</h2>

@@ -602,11 +602,11 @@ export default function Home() {
 
     if (isScholar) {
       const details = getScholarFullDetails(user._id);
-      details.qualifications?.forEach((q) => {
+      details.qualifications?.forEach((q: any) => {
         const spec = getRowVal(q, "specialization");
         if (spec && !chips.includes(spec)) chips.push(spec);
       });
-      details.publications?.forEach((p) => {
+      details.publications?.forEach((p: any) => {
         const title = getRowVal(p, "title");
         if (title.toLowerCase().includes("ai") || title.toLowerCase().includes("deep learning")) {
           if (!chips.includes("Artificial Intelligence")) chips.push("Artificial Intelligence");
@@ -614,11 +614,11 @@ export default function Home() {
       });
     } else if (isGuide) {
       const details = getFacultyFullDetails(user._id);
-      details.qualifications?.forEach((q) => {
+      details.qualifications?.forEach((q: any) => {
         const spec = getRowVal(q, "specialization");
         if (spec && !chips.includes(spec)) chips.push(spec);
       });
-      details.publications?.forEach((p) => {
+      details.publications?.forEach((p: any) => {
         const journal = getRowVal(p, "journal");
         if (journal.toLowerCase().includes("blockchain")) {
           if (!chips.includes("Blockchain")) chips.push("Blockchain");
