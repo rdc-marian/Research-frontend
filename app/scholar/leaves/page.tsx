@@ -135,7 +135,7 @@ export default function ScholarLeavesPage() {
 
   const totalUsed = useMemo(() => {
     return leaves
-      .filter((l) => l.status === "ApprovedByCoordinator")
+      .filter((l) => l.status === "ApprovedByGuide" || l.status === "ApprovedByCoordinator")
       .reduce((sum, current) => sum + current.totalDays, 0);
   }, [leaves]);
 
@@ -249,7 +249,7 @@ export default function ScholarLeavesPage() {
             </div>
             <div className="mt-4 flex items-baseline gap-2">
               <span className="text-3xl font-display font-semibold text-slate-900">
-                {leaves.filter((l) => l.status === "Pending" || l.status === "ApprovedByGuide").length}
+                {leaves.filter((l) => l.status === "Pending").length}
               </span>
               <span className="text-xs text-slate-500">requests in review</span>
             </div>
@@ -295,6 +295,7 @@ export default function ScholarLeavesPage() {
                   >
                     <option value="Casual Leave">Casual Leave</option>
                     <option value="Duty Leave">Duty Leave</option>
+                    <option value="On duty">On duty</option>
                     <option value="Sick Leave">Sick Leave</option>
                     <option value="Maternity Leave">Maternity Leave</option>
                     <option value="Other">Other</option>

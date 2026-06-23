@@ -252,7 +252,7 @@ export default function GuideLeaveReviewsPage() {
                         : "bg-rose-600 hover:bg-rose-700"
                     }`}
                   >
-                    {processing ? "Processing..." : actionStatus === "ApprovedByGuide" ? "Approve (Send to Coordinator)" : "Reject Leave"}
+                    {processing ? "Processing..." : actionStatus === "ApprovedByGuide" ? "Approve Leave" : "Reject Leave"}
                   </button>
                 </div>
               </form>

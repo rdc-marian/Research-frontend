@@ -53,6 +53,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           targetRole = "research_guide";
         } else if (pathname.startsWith("/scholar")) {
           targetRole = "scholar";
+        } else if (pathname.startsWith("/library")) {
+          targetRole = "library";
         }
 
         if (targetRole) {

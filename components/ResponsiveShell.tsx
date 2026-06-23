@@ -42,7 +42,7 @@ export function ResponsiveShell({
         ) : null}
         <div
           id="primary-sidebar"
-          className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-out lg:static lg:translate-x-0 lg:w-64 ${
+          className={`fixed inset-y-0 left-0 z-50 w-72 transform transition-transform duration-300 ease-out lg:sticky lg:top-0 lg:h-screen lg:translate-x-0 lg:w-64 ${
             isSidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
         >

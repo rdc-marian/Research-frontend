@@ -10,6 +10,7 @@ import {
   Users,
   Award,
   Calendar,
+  Coins,
 } from "lucide-react";
 
 export const scholarNav: NavItem[] = [
@@ -18,13 +19,14 @@ export const scholarNav: NavItem[] = [
   { label: "My Portfolio", icon: Award, href: "/scholar/portfolio" },
   { label: "Leave Applications", icon: Calendar, href: "/scholar/leaves" },
   { label: "My Approvals", icon: ClipboardCheck, href: "/scholar/approvals" },
+  { label: "Activity Report", icon: NotebookText, href: "/scholar/report" },
 ];
 
 export const facultyNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/faculty" },
-  { label: "Scholars", icon: Users, href: "/faculty/scholars" },
   { label: "Submissions", icon: FileText, href: "/faculty/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/faculty/approvals" },
+  { label: "Incentives", icon: Coins, href: "/faculty/incentives" },
 ];
 
 export const researchGuideNav: NavItem[] = [
@@ -35,6 +37,7 @@ export const researchGuideNav: NavItem[] = [
   { label: "Portfolio Reviews", icon: Award, href: "/research-guide/portfolio-reviews" },
   { label: "Leave Reviews", icon: Calendar, href: "/research-guide/leave-reviews" },
   { label: "Reports", icon: NotebookText, href: "/research-guide/reports" },
+  { label: "Incentives", icon: Coins, href: "/research-guide/incentives" },
   { label: "Profile", icon: User, href: "/research-guide/profile" },
 ];
 
@@ -48,6 +51,7 @@ export const adminNav: NavItem[] = [
   { label: "Scholar Portfolios", icon: Award, href: "/admin/portfolios" },
   { label: "Overall Leaves", icon: Calendar, href: "/admin/leaves" },
   { label: "Reports", icon: NotebookText, href: "/admin/reports" },
+  { label: "Incentives", icon: Coins, href: "/admin/incentives" },
   { label: "Settings", icon: Settings, href: "/admin/settings" },
 ];
 
@@ -60,4 +64,8 @@ export const coordinatorNav: NavItem[] = [
   { label: "Research Center Leaves", icon: Calendar, href: "/coordinator/leaves" },
   { label: "Reports", icon: NotebookText, href: "/coordinator/reports" },
   { label: "Profile", icon: User, href: "/coordinator/profile" },
+];
+
+export const libraryNav: NavItem[] = [
+  { label: "Dashboard", icon: LayoutDashboard, href: "/library" },
 ];

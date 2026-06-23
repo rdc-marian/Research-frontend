@@ -7,7 +7,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
-import { apiDelete, apiGet, apiPostJson, type ApiListResponse } from "@/lib/api";
+import { apiDelete, apiGet, apiPostJson, apiPatchJson, type ApiListResponse } from "@/lib/api";
 
 type User = {
   _id: string;
@@ -93,6 +93,21 @@ export default function AdminUsersPage() {
     const response = await apiGet<ApiListResponse<User>>("/users");
     setUsers(response.items);
   }, []);
+
+  const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
+
+  const handleApproveUser = async (user: User) => {
+    try {
+      setApprovingUserId(user._id);
+      await apiPatchJson(`/users/${user._id}`, { status: "Active" });
+      await loadUsers();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to approve user";
+      alert(message);
+    } finally {
+      setApprovingUserId(null);
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -254,6 +269,16 @@ export default function AdminUsersPage() {
         status: <StatusBadge status={user.status ?? "Active"} />,
         action: (
           <div className="flex justify-end gap-2">
+            {user.status === "PendingApproval" && (
+              <button
+                type="button"
+                onClick={() => handleApproveUser(user)}
+                disabled={approvingUserId === user._id}
+                className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {approvingUserId === user._id ? "Approving..." : "Approve"}
+              </button>
+            )}
             <Link
               href={`/admin/users/details?id=${user._id}`}
               className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
@@ -271,7 +296,7 @@ export default function AdminUsersPage() {
           </div>
         ),
       })),
-    [deletingUserId, handleDeleteUser, users]
+    [deletingUserId, approvingUserId, handleDeleteUser, users]
   );
 
   return (

@@ -81,6 +81,14 @@ const DEFAULT_DB = {
       role: "admin",
       roles: ["admin"],
       status: "Active"
+    },
+    {
+      _id: "mock-library-id",
+      name: "Sijo Library",
+      email: "library@univ.edu",
+      role: "library",
+      roles: ["library"],
+      status: "Active"
     }
   ],
   departments: [
@@ -97,6 +105,24 @@ const DEFAULT_DB = {
       email: "cse@univ.edu",
       totalScholars: 0,
       coordinator: { name: "Dr. Paulose V", email: "paulose@univ.edu" }
+    }
+  ],
+  researchCenters: [
+    {
+      _id: "center-mca",
+      name: "MCA Research Center",
+      code: "MCA",
+      status: "Active",
+      coordinator: { name: "Prof. Sijo Mon", email: "coordinator@univ.edu" },
+      department: { name: "MCA" }
+    },
+    {
+      _id: "center-cse",
+      name: "Computer Science Research Center",
+      code: "CSE",
+      status: "Active",
+      coordinator: { name: "Dr. Paulose V", email: "paulose@univ.edu" },
+      department: { name: "Computer Science" }
     }
   ],
   leaves: [
@@ -216,7 +242,27 @@ const getDB = (): typeof DEFAULT_DB => {
     return DEFAULT_DB;
   }
   try {
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    let updated = false;
+    if (!parsed.researchCenters) {
+      parsed.researchCenters = DEFAULT_DB.researchCenters;
+      updated = true;
+    }
+    if (parsed.users && !parsed.users.some((u: any) => u._id === "mock-library-id")) {
+      parsed.users.push({
+        _id: "mock-library-id",
+        name: "Sijo Library",
+        email: "library@univ.edu",
+        role: "library",
+        roles: ["library"],
+        status: "Active"
+      });
+      updated = true;
+    }
+    if (updated) {
+      localStorage.setItem("research_mock_db", JSON.stringify(parsed));
+    }
+    return parsed;
   } catch {
     return DEFAULT_DB;
   }
@@ -237,13 +283,13 @@ const getPortfolioSummary = (scholarId: string) => {
     const Pending = filtered.filter(
       (x) =>
         x.verificationStatus === "Pending" ||
-        x.status === "Pending" ||
-        x.status === "ApprovedByGuide"
+        x.status === "Pending"
     ).length;
     const Approved = filtered.filter(
       (x) =>
         x.verificationStatus === "Approved" ||
         x.status === "Approved" ||
+        x.status === "ApprovedByGuide" ||
         x.status === "ApprovedByCoordinator"
     ).length;
     const Rejected = filtered.filter(
@@ -362,7 +408,7 @@ const handleMockRequest = async (
       role: body.role || "scholar",
       roles: body.roles || [body.role || "scholar"],
       department: body.department || "MCA",
-      status: "Active",
+      status: body.status || "Active",
       guide: body.guideId ? { _id: body.guideId, name: db.users.find(u => u._id === body.guideId)?.name || "Unknown Guide" } : undefined
     };
     db.users.push(newUser);
@@ -398,6 +444,59 @@ const handleMockRequest = async (
   // Route: GET /departments
   if (method === "GET" && pathname === "/departments") {
     return { items: db.departments };
+  }
+
+  // Route: GET /research-centers
+  if (method === "GET" && pathname === "/research-centers") {
+    return { items: db.researchCenters || [] };
+  }
+
+  // Route: POST /research-centers
+  if (method === "POST" && pathname === "/research-centers") {
+    const newCenter = {
+      _id: "center-" + Date.now(),
+      name: body.name,
+      code: body.code,
+      status: body.status || "Active",
+      coordinator: body.coordinatorId ? {
+        _id: body.coordinatorId,
+        name: db.users.find(u => u._id === body.coordinatorId)?.name || "Unknown"
+      } : null,
+      department: body.departmentId ? {
+        _id: body.departmentId,
+        name: db.departments.find(d => d._id === body.departmentId)?.name || "Unknown"
+      } : null
+    };
+    if (!db.researchCenters) db.researchCenters = [];
+    db.researchCenters.push(newCenter);
+    saveDB(db);
+    return { item: newCenter };
+  }
+
+  // Route: GET /research-centers/:id
+  if (method === "GET" && pathname.startsWith("/research-centers/")) {
+    const id = pathname.substring(18);
+    const item = (db.researchCenters || []).find(c => c._id === id);
+    if (!item) throw new Error("Research center not found");
+    return { item };
+  }
+
+  // Route: PATCH /research-centers/:id
+  if (method === "PATCH" && pathname.startsWith("/research-centers/")) {
+    const id = pathname.substring(18);
+    const idx = (db.researchCenters || []).findIndex(c => c._id === id);
+    if (idx === -1) throw new Error("Research center not found");
+    db.researchCenters[idx] = { ...db.researchCenters[idx], ...body };
+    saveDB(db);
+    return { item: db.researchCenters[idx] };
+  }
+
+  // Route: DELETE /research-centers/:id
+  if (method === "DELETE" && pathname.startsWith("/research-centers/")) {
+    const id = pathname.substring(18);
+    db.researchCenters = (db.researchCenters || []).filter(c => c._id !== id);
+    saveDB(db);
+    return { message: "Success" };
   }
 
   // Route: GET /leaves
