@@ -1,9 +1,18 @@
+import { apiGet, apiPostJson, apiPatchJson } from "./api";
+
 export type IncentiveCategory = "Publication" | "Patent" | "Registration Fee";
 
-export type IncentiveStatus = "Pending Library" | "Pending Guide" | "Pending Admin" | "Pending Principal" | "Approved" | "Paid" | "Rejected";
+export type IncentiveStatus =
+  | "Pending Library"
+  | "Pending Guide"
+  | "Pending Admin"
+  | "Pending Principal"
+  | "Approved"
+  | "Paid"
+  | "Rejected";
 
 export interface IncentiveApplication {
-  id: string;
+  id: string; // Maps to _id in MongoDB
   facultyName: string;
   facultyEmail: string;
   category: IncentiveCategory;
@@ -28,46 +37,50 @@ export interface IncentiveApplication {
   proofImage?: string; // Uploaded proof as base64 string
 }
 
-export const getMockIncentives = (): IncentiveApplication[] => {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("mock_incentives");
-  if (stored) {
-    return JSON.parse(stored);
-  }
-  // Initial seed data
-  const seed: IncentiveApplication[] = [
-    {
-      id: "INC-001",
-      facultyName: "Dr. Elizabeth Paul",
-      facultyEmail: "elizabeth.paul@univ.edu",
-      category: "Publication",
-      amountRequested: 5000,
-      dateApplied: new Date().toISOString(),
-      status: "Pending Library",
-      publicationTitle: "Machine Learning in Academic Registry Systems",
-      journalName: "IEEE Transactions on Education",
-      doiLink: "https://doi.org/10.1109/TE.2024.123",
-      pubStatus: "Published"
-    },
-    {
-      id: "INC-002",
-      facultyName: "Dr. Elizabeth Paul",
-      facultyEmail: "elizabeth.paul@univ.edu",
-      category: "Patent",
-      amountRequested: 15000,
-      dateApplied: new Date(Date.now() - 86400000 * 2).toISOString(),
-      status: "Approved",
-      patentTitle: "Optimized Blockchain Architecture",
-      patentNumber: "PAT-2023-112233",
-      patentStatus: "Granted"
-    }
-  ];
-  localStorage.setItem("mock_incentives", JSON.stringify(seed));
-  return seed;
+/**
+ * Fetch all incentive applications from the database
+ */
+export const getIncentives = async (): Promise<IncentiveApplication[]> => {
+  const res = await apiGet<{ items: any[] }>("/incentives");
+  return (res.items || []).map((item) => ({
+    id: item._id,
+    facultyName: item.facultyName,
+    facultyEmail: item.facultyEmail,
+    category: item.category,
+    amountRequested: item.amountRequested,
+    dateApplied: item.dateApplied || item.createdAt || new Date().toISOString(),
+    status: item.status,
+    publicationTitle: item.publicationTitle,
+    journalName: item.journalName,
+    doiLink: item.doiLink,
+    pubStatus: item.pubStatus,
+    patentTitle: item.patentTitle,
+    patentNumber: item.patentNumber,
+    patentStatus: item.patentStatus,
+    eventName: item.eventName,
+    eventType: item.eventType,
+    proofImage: item.proofImage,
+  }));
 };
 
-export const saveMockIncentives = (incentives: IncentiveApplication[]) => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("mock_incentives", JSON.stringify(incentives));
-  }
+/**
+ * Update the status of a specific incentive application
+ */
+export const updateIncentiveStatus = async (
+  id: string,
+  status: IncentiveStatus,
+  notes?: Record<string, string>
+): Promise<any> => {
+  return apiPatchJson(`/incentives/${id}/status`, { status, ...notes });
 };
+
+/**
+ * Submit a new incentive application
+ */
+export const createIncentive = async (
+  data: Partial<IncentiveApplication>
+): Promise<any> => {
+  return apiPostJson("/incentives", data);
+};
+
+

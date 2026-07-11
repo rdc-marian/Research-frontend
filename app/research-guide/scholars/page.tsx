@@ -16,6 +16,10 @@ type Scholar = {
   email?: string;
   department?: string;
   status?: string;
+  guide?: {
+    _id: string;
+    name?: string;
+  };
 };
 
 const columns = [
@@ -33,6 +37,7 @@ export default function ResearchGuideScholarsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?._id) return;
     let isMounted = true;
     const load = async () => {
       try {
@@ -40,7 +45,12 @@ export default function ResearchGuideScholarsPage() {
         setError(null);
         const response = await apiGet<ApiListResponse<Scholar>>("/users?role=scholar");
         if (!isMounted) return;
-        setScholars(response.items);
+        
+        // Filter scholars assigned under this particular guide
+        const filtered = response.items.filter(
+          (s) => s.guide?._id === user._id
+        );
+        setScholars(filtered);
       } catch (err) {
         if (!isMounted) return;
         setError(err instanceof Error ? err.message : "Failed to load scholars");
@@ -52,7 +62,7 @@ export default function ResearchGuideScholarsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?._id]);
 
   const rows = useMemo(
     () =>

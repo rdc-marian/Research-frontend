@@ -8,6 +8,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { scholarNav } from "@/data/roleNav";
 import { apiGet, type ApiItemResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -28,6 +29,7 @@ const formatDate = (value?: string) => {
 };
 
 function ScholarApprovalDetailsContent() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const submissionId = useMemo(() => searchParams.get("id") ?? "", [searchParams]);
   const [submission, setSubmission] = useState<Submission | null>(null);
@@ -62,7 +64,7 @@ function ScholarApprovalDetailsContent() {
   return (
     <PageLayout
       title="Approval Details"
-      userName="Scholar User"
+      userName={user?.name || "Scholar"}
       roleLabel="Scholar"
       navItems={scholarNav}
       activeItem="My Approvals"
@@ -113,6 +115,7 @@ function ScholarApprovalDetailsContent() {
 }
 
 export default function ScholarApprovalDetailsPage() {
+  const { user } = useAuth();
   return (
     <Suspense fallback={<p className="p-6 text-sm text-slate-500">Loading...</p>}>
       <ScholarApprovalDetailsContent />

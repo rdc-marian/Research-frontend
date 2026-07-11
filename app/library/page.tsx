@@ -5,9 +5,10 @@ import { PageLayout } from "@/components/PageLayout";
 import { libraryNav } from "@/data/roleNav";
 import { useAuth } from "@/components/AuthProvider";
 import {
-  getMockIncentives,
-  saveMockIncentives,
+  getIncentives,
+  updateIncentiveStatus,
   IncentiveApplication,
+  IncentiveStatus,
 } from "@/lib/mockIncentives";
 import {
   Clock,
@@ -27,24 +28,30 @@ export default function LibraryDashboard() {
   const [selectedFilter, setSelectedFilter] = useState<"Pending" | "Verified" | "Rejected">("Pending");
   const [selectedApp, setSelectedApp] = useState<IncentiveApplication | null>(null);
 
+  const fetchIncentives = async () => {
+    try {
+      const data = await getIncentives();
+      setIncentives(data);
+    } catch (err) {
+      console.error("Failed to fetch incentives:", err);
+    }
+  };
+
   useEffect(() => {
-    setIncentives(getMockIncentives());
+    fetchIncentives();
   }, []);
 
-  const handleAction = (id: string, action: "Verify" | "Reject") => {
-    const updated = incentives.map((inc) => {
-      if (inc.id === id) {
-        return {
-          ...inc,
-          status: action === "Verify" ? "Pending Admin" : "Rejected",
-        } as IncentiveApplication;
+  const handleAction = async (id: string, action: "Verify" | "Reject") => {
+    try {
+      const status: IncentiveStatus = action === "Verify" ? "Pending Admin" : "Rejected";
+      await updateIncentiveStatus(id, status);
+      await fetchIncentives();
+      if (selectedApp && selectedApp.id === id) {
+        setSelectedApp(null);
       }
-      return inc;
-    });
-    saveMockIncentives(updated);
-    setIncentives(updated);
-    if (selectedApp && selectedApp.id === id) {
-      setSelectedApp(null);
+    } catch (err) {
+      console.error("Failed to update incentive status:", err);
+      alert("Failed to update status.");
     }
   };
 

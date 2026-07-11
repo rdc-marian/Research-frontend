@@ -6,6 +6,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { scholarNav } from "@/data/roleNav";
 import { apiGet, apiPostForm, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Department = {
   _id: string;
@@ -21,6 +22,7 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--maroon-600)]";
 
 export default function ScholarNewSubmissionPage() {
+  const { user } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +119,7 @@ export default function ScholarNewSubmissionPage() {
   return (
     <PageLayout
       title="New Submission"
-      userName="Scholar User"
+      userName={user?.name || "Scholar"}
       roleLabel="Scholar"
       navItems={scholarNav}
       activeItem="My Submissions"

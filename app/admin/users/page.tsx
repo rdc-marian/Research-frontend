@@ -8,6 +8,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 import { apiDelete, apiGet, apiPostJson, apiPatchJson, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type User = {
   _id: string;
@@ -69,6 +70,7 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-700 shadow-sm";
 
 export default function AdminUsersPage() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [researchCenters, setResearchCenters] = useState<ResearchCenter[]>([]);
   const [guides, setGuides] = useState<Guide[]>([]);
@@ -302,7 +304,7 @@ export default function AdminUsersPage() {
   return (
     <PageLayout
       title="Users"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Users"

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { adminNav } from "@/data/roleNav";
-import { getMockIncentives, saveMockIncentives, IncentiveApplication } from "@/lib/mockIncentives";
+import { getIncentives, updateIncentiveStatus, IncentiveApplication, IncentiveStatus } from "@/lib/mockIncentives";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function AdminIncentives() {
@@ -11,25 +11,33 @@ export default function AdminIncentives() {
   const [incentives, setIncentives] = useState<IncentiveApplication[]>([]);
   const [activeTab, setActiveTab] = useState<"Admin" | "Principal" | "Processing">("Admin");
 
+  const fetchIncentives = async () => {
+    try {
+      const data = await getIncentives();
+      setIncentives(data);
+    } catch (err) {
+      console.error("Failed to fetch incentives:", err);
+    }
+  };
+
   useEffect(() => {
-    setIncentives(getMockIncentives());
+    fetchIncentives();
   }, []);
 
-  const handleAction = (id: string, action: "ApproveAdmin" | "Reject" | "ApprovePrincipal" | "MarkPaid") => {
-    const updated = incentives.map((inc) => {
-      if (inc.id === id) {
-        let newStatus = inc.status;
-        if (action === "Reject") newStatus = "Rejected";
-        else if (action === "ApproveAdmin") newStatus = "Pending Principal";
-        else if (action === "ApprovePrincipal") newStatus = "Approved";
-        else if (action === "MarkPaid") newStatus = "Paid";
+  const handleAction = async (id: string, action: "ApproveAdmin" | "Reject" | "ApprovePrincipal" | "MarkPaid") => {
+    try {
+      let newStatus: IncentiveStatus = "Pending Admin";
+      if (action === "Reject") newStatus = "Rejected";
+      else if (action === "ApproveAdmin") newStatus = "Pending Principal";
+      else if (action === "ApprovePrincipal") newStatus = "Approved";
+      else if (action === "MarkPaid") newStatus = "Paid";
 
-        return { ...inc, status: newStatus } as IncentiveApplication;
-      }
-      return inc;
-    });
-    saveMockIncentives(updated);
-    setIncentives(updated);
+      await updateIncentiveStatus(id, newStatus);
+      await fetchIncentives();
+    } catch (err) {
+      console.error("Failed to update incentive status:", err);
+      alert("Failed to update status.");
+    }
   };
 
   const getFilteredList = () => {

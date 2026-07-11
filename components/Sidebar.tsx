@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { BookOpen, LogOut } from "lucide-react";
+import { useAuth } from "@/components/AuthProvider";
 
 type NavItem = {
   label: string;
@@ -14,6 +17,8 @@ type SidebarProps = {
 };
 
 export function Sidebar({ navItems, activeItem }: SidebarProps) {
+  const { logout } = useAuth();
+
   return (
     <aside className="flex h-full w-full flex-col gap-6 overflow-y-auto bg-gradient-to-b from-[color:var(--maroon-900)] to-[color:var(--maroon-700)] px-4 py-6 text-white sm:px-5 lg:h-screen lg:w-64">
       <div className="flex items-center gap-3 border-b border-white/10 pb-4 mb-2">
@@ -44,13 +49,13 @@ export function Sidebar({ navItems, activeItem }: SidebarProps) {
         <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-xs text-white/80">
           Minimal academic workspace for research workflows and approvals.
         </div>
-        <Link
-          href="/"
-          className="flex w-full items-center justify-start gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white/90 transition hover:bg-white/20"
+        <button
+          onClick={logout}
+          className="flex w-full items-center justify-start gap-2 rounded-xl border border-white/20 bg-white/10 px-3 py-2 text-xs font-semibold text-white/90 transition hover:bg-white/20 cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
           <span>Logout</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

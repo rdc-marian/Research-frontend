@@ -6,6 +6,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { adminNav } from "@/data/roleNav";
 import { apiGet, apiPostJson, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Department = {
   _id: string;
@@ -30,6 +31,7 @@ const columns = [
 ];
 
 export default function AdminDepartmentsPage() {
+  const { user } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
   const [loading, setLoading] = useState(true);
@@ -140,7 +142,7 @@ export default function AdminDepartmentsPage() {
   return (
     <PageLayout
       title="Departments"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Departments"

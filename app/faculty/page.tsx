@@ -45,28 +45,12 @@ const DEFAULT_FACULTY_TABS = [
   { id: "projects", label: "Funded Projects", isPredefined: true, columns: ["Sl.No.", "Project Title", "Funding Agency", "Amount Sanctioned", "Status"] },
 ];
 
-const DEFAULT_FACULTY_TABS_DATA = {
-  qualifications: [
-    { qualification: "Ph.D.", specialization: "Computer Science", year: "2012", institution: "CUSAT" },
-    { qualification: "M.Tech", specialization: "Computer Science & Engineering", year: "2006", institution: "IIT Madras" },
-    { qualification: "B.Tech", specialization: "Computer Science", year: "2004", institution: "NIT Calicut" }
-  ],
-  publications: [
-    { "publication_title": "Machine Learning in Academic Registry Systems", "journal_name": "IEEE Transactions on Education", "year_of_publication": "2024", "impact_factor": "4.8" },
-    { "publication_title": "Optimized Blockchain Architecture for Research Indexing", "journal_name": "Springer Journal of Grid Computing", "year_of_publication": "2023", "impact_factor": "3.5" }
-  ],
-  scholars: [
-    { "scholar_name": "Albin Joseph", "research_topic": "AI-Driven Healthcare Diagnostics", "registration_date": "10/05/2024", status: "Ongoing" },
-    { "scholar_name": "Binu Thomas", "research_topic": "Social Interventions in Rural Districts", "registration_date": "12/09/2023", status: "Ongoing" },
-    { "scholar_name": "Chitra Nair", "research_topic": "Deep Learning for Automated Agriculture", "registration_date": "15/01/2024", status: "Ongoing" }
-  ],
-  committees: [
-    { "committee___organization": "Board of Studies in Computer Applications, Marian College", role: "Expert Member", "tenure___year": "2023 - Present" },
-    { "committee___organization": "IEEE Computer Society Kerala Chapter", role: "Executive Committee Member", "tenure___year": "2022 - 2025" }
-  ],
-  projects: [
-    { "project_title": "Automatic Brain Lesion Detection using AI", "funding_agency": "KSCSTE Kerala", "amount_sanctioned": "₹2,50,000", status: "Ongoing" }
-  ]
+const DEFAULT_FACULTY_TABS_DATA: Record<string, any[]> = {
+  qualifications: [],
+  publications: [],
+  scholars: [],
+  committees: [],
+  projects: []
 };
 
 const defaultMetrics = [
@@ -149,14 +133,33 @@ export default function FacultyDashboard() {
       }
     };
 
+    const syncPreferences = async (updatedPrefs: any) => {
+      if (user?._id) {
+        try {
+          const res: any = await apiPatchJson(`/users/${user._id}`, {
+            preferences: {
+              ...(user.preferences || {}),
+              ...updatedPrefs
+            }
+          });
+          if (res?.item) login("", res.item);
+        } catch (err) {
+          console.error("Failed to sync preferences to backend:", err);
+        }
+      }
+    };
+
     loadData();
 
-    // Load active tab layout and records from localStorage
+    // Load active tab layout and records from localStorage/preferences
     if (typeof window !== "undefined") {
-      // Load configuration lists
-      const savedTabs = localStorage.getItem("faculty_tabs_config");
-      const savedActive = localStorage.getItem("faculty_active_tabs");
-      const savedData = localStorage.getItem("faculty_custom_tabs_data");
+      const prefTabs = user?.preferences?.faculty_tabs_config;
+      const prefActive = user?.preferences?.faculty_active_tabs;
+      const prefData = user?.preferences?.faculty_custom_tabs_data;
+
+      const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem("faculty_tabs_config");
+      const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem("faculty_active_tabs");
+      const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem("faculty_custom_tabs_data");
 
       if (savedTabs) {
         setTabsList(JSON.parse(savedTabs));
@@ -183,14 +186,14 @@ export default function FacultyDashboard() {
         setCustomTabsData(DEFAULT_FACULTY_TABS_DATA);
       }
 
-      // Load Profile fields
-      setProfileName(localStorage.getItem("faculty_profile_name") || user?.name || "Dr. Elizabeth Paul");
-      setProfileDesignation(localStorage.getItem("faculty_profile_designation") || "Professor & Research Director");
-      setProfileUniqueId(localStorage.getItem("faculty_profile_unique_id") || "GUIDE-ELIZ-029");
-      setProfileEmail(localStorage.getItem("faculty_profile_email") || user?.email || "elizabeth.paul@univ.edu");
-      setProfileDept(localStorage.getItem("faculty_profile_dept") || user?.department || "MCA");
-      setProfileCenter(localStorage.getItem("faculty_profile_center") || "MCA Research Center");
-      setProfileAvatar(localStorage.getItem("faculty_profile_avatar") || "");
+      // Load Profile fields from database or localstorage
+      setProfileName(user?.name || localStorage.getItem("faculty_profile_name") || "");
+      setProfileDesignation(user?.designation || localStorage.getItem("faculty_profile_designation") || "");
+      setProfileUniqueId(user?.uniqueId || localStorage.getItem("faculty_profile_unique_id") || (user?._id ? `MCKA-FAC-${user._id.slice(-4).toUpperCase()}` : ""));
+      setProfileEmail(user?.email || localStorage.getItem("faculty_profile_email") || "");
+      setProfileDept(user?.department || localStorage.getItem("faculty_profile_dept") || "");
+      setProfileCenter(localStorage.getItem("faculty_profile_center") || "");
+      setProfileAvatar(user?.avatar || localStorage.getItem("faculty_profile_avatar") || "");
     }
 
     return () => {
@@ -220,7 +223,10 @@ export default function FacultyDashboard() {
         const updatedUser = await apiPatchJson<UserType>(`/users/${user._id}`, {
           name: profileName,
           email: profileEmail,
-          department: profileDept
+          department: profileDept,
+          designation: profileDesignation,
+          uniqueId: profileUniqueId,
+          avatar: profileAvatar
         });
         login("", updatedUser);
       } catch (err) {
@@ -239,6 +245,16 @@ export default function FacultyDashboard() {
       
     localStorage.setItem("faculty_active_tabs", JSON.stringify(nextActive));
     setActiveTabs(nextActive);
+    
+    if (user?._id) {
+      const updatedPrefs = {
+        ...(user.preferences || {}),
+        faculty_active_tabs: nextActive
+      };
+      apiPatchJson(`/users/${user._id}`, { preferences: updatedPrefs }).then((res: any) => {
+        if (res?.item) login("", res.item);
+      });
+    }
 
     if (selectedTab === tabId && nextActive.length > 0) {
       setSelectedTab(nextActive[0]);
@@ -293,6 +309,18 @@ export default function FacultyDashboard() {
     localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
     setCustomTabsData(nextData);
 
+    if (user?._id) {
+      const updatedPrefs = {
+        ...(user.preferences || {}),
+        faculty_tabs_config: nextList,
+        faculty_active_tabs: nextActive,
+        faculty_custom_tabs_data: nextData
+      };
+      apiPatchJson(`/users/${user._id}`, { preferences: updatedPrefs }).then((res: any) => {
+        if (res?.item) login("", res.item);
+      });
+    }
+
     setNewTabLabel("");
     setNewTabColumns("");
     setShowAddTabModal(false);
@@ -309,6 +337,16 @@ export default function FacultyDashboard() {
 
     localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
     setCustomTabsData(nextData);
+
+    if (user?._id) {
+      const updatedPrefs = {
+        ...(user.preferences || {}),
+        faculty_custom_tabs_data: nextData
+      };
+      apiPatchJson(`/users/${user._id}`, { preferences: updatedPrefs }).then((res: any) => {
+        if (res?.item) login("", res.item);
+      });
+    }
 
     setNewRowValues({});
     setShowAddRowModal(false);
@@ -342,6 +380,18 @@ export default function FacultyDashboard() {
       delete nextData[tabId];
       localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
       setCustomTabsData(nextData);
+
+      if (user?._id) {
+        const updatedPrefs = {
+          ...(user.preferences || {}),
+          faculty_tabs_config: nextList,
+          faculty_active_tabs: nextActive,
+          faculty_custom_tabs_data: nextData
+        };
+        apiPatchJson(`/users/${user._id}`, { preferences: updatedPrefs }).then((res: any) => {
+          if (res?.item) login("", res.item);
+        });
+      }
     } else if (deleteConfirmType === "row") {
       const rowIdx = deleteTargetIndex;
       if (!selectedTab) return;
@@ -352,6 +402,16 @@ export default function FacultyDashboard() {
 
       localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
       setCustomTabsData(nextData);
+
+      if (user?._id) {
+        const updatedPrefs = {
+          ...(user.preferences || {}),
+          faculty_custom_tabs_data: nextData
+        };
+        apiPatchJson(`/users/${user._id}`, { preferences: updatedPrefs }).then((res: any) => {
+          if (res?.item) login("", res.item);
+        });
+      }
     }
 
     setDeleteConfirmType(null);

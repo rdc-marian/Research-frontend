@@ -1,8 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { apiGet } from "@/lib/api";
+import { apiGet, apiPostJson } from "@/lib/api";
 import { usePathname, useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export interface User {
   _id: string;
@@ -14,6 +15,12 @@ export interface User {
   researchCenter?: any;
   guide?: any;
   status?: string;
+  requirePasswordChange?: boolean;
+  designation?: string;
+  uniqueId?: string;
+  avatar?: string;
+  academicYear?: string;
+  preferences?: any;
 }
 
 interface AuthContextType {
@@ -38,46 +45,95 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   const router = useRouter();
 
+  const syncUserToLocalStorage = (resolvedUser: User) => {
+    if (typeof window === "undefined") return;
+
+    const role = resolvedUser.role || resolvedUser.roles?.[0] || "scholar";
+
+    // Restore extended profile fields
+    if (resolvedUser.name) localStorage.setItem(`${role}_profile_name`, resolvedUser.name);
+    if (resolvedUser.email) localStorage.setItem(`${role}_profile_email`, resolvedUser.email);
+    if (resolvedUser.department) localStorage.setItem(`${role}_profile_dept`, resolvedUser.department);
+    
+    if (resolvedUser.designation) localStorage.setItem(`${role}_profile_designation`, resolvedUser.designation);
+    if (resolvedUser.uniqueId) localStorage.setItem(`${role}_profile_unique_id`, resolvedUser.uniqueId);
+    if (resolvedUser.avatar) localStorage.setItem(`${role}_profile_avatar`, resolvedUser.avatar);
+    if (resolvedUser.academicYear) {
+      localStorage.setItem(`${role}_profile_academic_year`, resolvedUser.academicYear);
+    }
+
+    // Restore preferences
+    if (resolvedUser.preferences) {
+      Object.entries(resolvedUser.preferences).forEach(([key, val]) => {
+        localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val));
+      });
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
     const initAuth = async () => {
       try {
-        setLoading(true);
-        let targetRole = "";
-        if (pathname.startsWith("/admin")) {
-          targetRole = "admin";
-        } else if (pathname.startsWith("/coordinator")) {
-          targetRole = "coordinator";
-        } else if (pathname.startsWith("/faculty")) {
-          targetRole = "faculty";
-        } else if (pathname.startsWith("/research-guide")) {
-          targetRole = "research_guide";
-        } else if (pathname.startsWith("/scholar")) {
-          targetRole = "scholar";
-        } else if (pathname.startsWith("/library")) {
-          targetRole = "library";
-        }
+        if (isMounted) setLoading(true);
+        
+        // Fetch current user from backend auth/me
+        const res = await apiGet<{ item?: User; user?: User }>("/auth/me");
+        if (!isMounted) return;
 
-        if (targetRole) {
-          const res = await apiGet<{ items: User[] }>(`/users?role=${targetRole}`);
-          if (!isMounted) return;
-          if (res.items && res.items.length > 0) {
-            setUser(res.items[0]);
-          } else {
-            setUser({
-              _id: "mock-id-123",
-              name: `Mock ${targetRole.toUpperCase()} User`,
-              email: `${targetRole}@univ.edu`,
-              role: targetRole,
-              roles: [targetRole],
-            });
+        const resolvedUser = res ? (res.item || res.user) : null;
+
+        if (resolvedUser) {
+          setUser(resolvedUser);
+          syncUserToLocalStorage(resolvedUser);
+
+          // Force redirect if password change is required
+          if (resolvedUser.requirePasswordChange) {
+            const role = resolvedUser.role || resolvedUser.roles?.[0];
+            let changePasswordPath = "/";
+            if (role === "admin") changePasswordPath = "/admin/settings";
+            else if (role === "coordinator") changePasswordPath = "/coordinator/profile/change-password";
+            else if (role === "faculty") changePasswordPath = "/faculty/profile/change-password";
+            else if (role === "research_guide") changePasswordPath = "/research-guide/profile/change-password";
+            else if (role === "scholar") changePasswordPath = "/scholar/profile/change-password";
+            else if (role === "library") changePasswordPath = "/library/profile/change-password";
+
+            if (pathname !== changePasswordPath) {
+              router.push(changePasswordPath);
+            }
+            return;
+          }
+
+          // If the user is on the login page and has a valid token, redirect to their home dashboard
+          if (pathname === "/") {
+            const role = resolvedUser.role || resolvedUser.roles?.[0];
+            if (role === "admin") router.push("/admin");
+            else if (role === "coordinator") router.push("/coordinator");
+            else if (role === "faculty") router.push("/faculty");
+            else if (role === "research_guide") router.push("/research-guide");
+            else if (role === "scholar") router.push("/scholar");
+            else if (role === "library") router.push("/library");
           }
         } else {
-          if (isMounted) setUser(null);
+          setUser(null);
+          const isProtected = ["/admin", "/coordinator", "/faculty", "/research-guide", "/scholar", "/library"].some(
+            (prefix) => pathname.startsWith(prefix)
+          );
+          if (isProtected) {
+            router.push("/");
+          }
         }
-      } catch (error) {
-        console.error("Auto-auth resolution failed:", error);
+      } catch (error: any) {
+        if (error && error.message !== "Authentication required") {
+          console.error("Auto-auth resolution failed:", error);
+        }
         if (isMounted) setUser(null);
+        
+        const isProtected = ["/admin", "/coordinator", "/faculty", "/research-guide", "/scholar", "/library"].some(
+          (prefix) => pathname.startsWith(prefix)
+        );
+        if (isProtected) {
+          router.push("/");
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -87,13 +143,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       isMounted = false;
     };
-  }, [pathname]);
+  }, [pathname, router]);
 
   const login = (token: string, userData: User) => {
     setUser(userData);
+    syncUserToLocalStorage(userData);
+
+    if (userData.requirePasswordChange) {
+      const role = userData.role || userData.roles?.[0];
+      let changePasswordPath = "/";
+      if (role === "admin") changePasswordPath = "/admin/settings";
+      else if (role === "coordinator") changePasswordPath = "/coordinator/profile/change-password";
+      else if (role === "faculty") changePasswordPath = "/faculty/profile/change-password";
+      else if (role === "research_guide") changePasswordPath = "/research-guide/profile/change-password";
+      else if (role === "scholar") changePasswordPath = "/scholar/profile/change-password";
+      else if (role === "library") changePasswordPath = "/library/profile/change-password";
+
+      router.push(changePasswordPath);
+      return;
+    }
+
+    const role = userData.role || userData.roles?.[0];
+    if (role === "admin") router.push("/admin");
+    else if (role === "coordinator") router.push("/coordinator");
+    else if (role === "faculty") router.push("/faculty");
+    else if (role === "research_guide") router.push("/research-guide");
+    else if (role === "scholar") router.push("/scholar");
+    else if (role === "library") router.push("/library");
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await apiPostJson("/auth/logout", {});
+    } catch (e) {
+      console.error("Failed to clear server session:", e);
+    }
     setUser(null);
     router.push("/");
   };

@@ -7,6 +7,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { scholarNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -36,12 +37,14 @@ const formatDate = (value?: string) => {
 };
 
 export default function ScholarApprovalsPage() {
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [approvals, setApprovals] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!user?._id) return;
     let isMounted = true;
 
     const load = async () => {
@@ -49,7 +52,7 @@ export default function ScholarApprovalsPage() {
         setLoading(true);
         setError(null);
         const response = await apiGet<ApiListResponse<Submission>>(
-          `/approvals?status=${encodeURIComponent(statusFilter)}`
+          `/approvals?status=${encodeURIComponent(statusFilter)}&scholarId=${user._id}`
         );
         if (!isMounted) return;
         setApprovals(response.items);
@@ -68,7 +71,7 @@ export default function ScholarApprovalsPage() {
     return () => {
       isMounted = false;
     };
-  }, [statusFilter]);
+  }, [statusFilter, user?._id]);
 
   const rows = useMemo(
     () =>
@@ -93,7 +96,7 @@ export default function ScholarApprovalsPage() {
   return (
     <PageLayout
       title="My Approvals"
-      userName="Scholar User"
+      userName={user?.name || "Scholar"}
       roleLabel="Scholar"
       navItems={scholarNav}
       activeItem="My Approvals"

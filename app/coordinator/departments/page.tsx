@@ -7,6 +7,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { coordinatorNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Department = {
   _id: string;
@@ -25,6 +26,7 @@ const columns = [
 ];
 
 export default function CoordinatorDepartmentsPage() {
+  const { user } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +82,7 @@ export default function CoordinatorDepartmentsPage() {
   return (
     <PageLayout
       title="Research Centers"
-      userName="Dr. Priya Sharma"
+      userName={user?.name || "Coordinator"}
       roleLabel="Coordinator"
       navItems={coordinatorNav}
       activeItem="Research Centers"

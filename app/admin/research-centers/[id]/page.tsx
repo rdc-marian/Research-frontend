@@ -8,6 +8,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
+import { useAuth } from "@/components/AuthProvider";
 import {
   apiGet,
   apiPatchJson,
@@ -85,6 +86,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function AdminResearchCenterDetailsPage() {
+  const { user } = useAuth();
   const params = useParams();
   const centerId = useMemo(() => {
     const id = params?.id;
@@ -329,7 +331,7 @@ export default function AdminResearchCenterDetailsPage() {
   return (
     <PageLayout
       title="Research Center"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Research Centers"

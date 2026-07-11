@@ -11,6 +11,7 @@ import { DashboardCards } from "@/components/DashboardCards";
 import { PageLayout } from "@/components/PageLayout";
 import { facultyNav } from "@/data/roleNav";
 import { apiGet } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type ReportSummary = {
   total: number;
@@ -31,6 +32,7 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-600 shadow-sm";
 
 export default function FacultyReportsPage() {
+  const { user } = useAuth();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [department, setDepartment] = useState("");
@@ -127,7 +129,7 @@ export default function FacultyReportsPage() {
   return (
     <PageLayout
       title="Reports"
-      userName="Dr. Emily Davis"
+      userName={user?.name || "Faculty"}
       roleLabel="Faculty Member"
       navItems={facultyNav}
       activeItem="Reports"

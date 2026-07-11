@@ -7,6 +7,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Coordinator = {
   _id: string;
@@ -25,6 +26,7 @@ const columns = [
 ];
 
 export default function AdminCoordinatorsPage() {
+  const { user } = useAuth();
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [search, setSearch] = useState("");
@@ -80,7 +82,7 @@ export default function AdminCoordinatorsPage() {
   return (
     <PageLayout
       title="Research Center Coordinators"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Coordinators"

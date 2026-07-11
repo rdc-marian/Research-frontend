@@ -3,29 +3,35 @@
 import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { researchGuideNav } from "@/data/roleNav";
-import { getMockIncentives, saveMockIncentives, IncentiveApplication } from "@/lib/mockIncentives";
+import { getIncentives, updateIncentiveStatus, IncentiveApplication } from "@/lib/mockIncentives";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function GuideIncentives() {
   const { user } = useAuth();
   const [incentives, setIncentives] = useState<IncentiveApplication[]>([]);
 
+  const fetchIncentives = async () => {
+    try {
+      const data = await getIncentives();
+      setIncentives(data);
+    } catch (err) {
+      console.error("Failed to fetch incentives:", err);
+    }
+  };
+
   useEffect(() => {
-    setIncentives(getMockIncentives());
+    fetchIncentives();
   }, []);
 
-  const handleApprove = (id: string, action: "Approve" | "Reject") => {
-    const updated = incentives.map((inc) => {
-      if (inc.id === id) {
-        return {
-          ...inc,
-          status: action === "Approve" ? "Pending Admin" : "Rejected",
-        } as IncentiveApplication;
-      }
-      return inc;
-    });
-    saveMockIncentives(updated);
-    setIncentives(updated);
+  const handleApprove = async (id: string, action: "Approve" | "Reject") => {
+    try {
+      const status = action === "Approve" ? "Pending Admin" : "Rejected";
+      await updateIncentiveStatus(id, status);
+      fetchIncentives();
+    } catch (err) {
+      console.error("Failed to update incentive status:", err);
+      alert("Failed to update status.");
+    }
   };
 
   const pendingList = incentives.filter(i => i.status === "Pending Guide");

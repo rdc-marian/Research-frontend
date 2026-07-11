@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { DataTable } from "@/components/Table";
 import { adminNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -53,6 +54,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState(defaultMetrics);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,7 +134,7 @@ export default function AdminDashboard() {
   return (
     <PageLayout
       title="Admin Dashboard"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Dashboard"

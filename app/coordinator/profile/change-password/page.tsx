@@ -1,16 +1,20 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { coordinatorNav } from "@/data/roleNav";
+import { useAuth } from "@/components/AuthProvider";
 
 const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--maroon-600)]";
 
 export default function CoordinatorChangePasswordPage() {
+  const { user } = useAuth();
   return (
     <PageLayout
       title="Change Password"
-      userName="Dr. Priya Sharma"
+      userName={user?.name || "Coordinator"}
       roleLabel="Coordinator"
       navItems={coordinatorNav}
       activeItem="Profile"

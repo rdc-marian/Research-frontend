@@ -1,13 +1,17 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { coordinatorNav } from "@/data/roleNav";
+import { useAuth } from "@/components/AuthProvider";
 
 export default function CoordinatorOverviewPage() {
+  const { user } = useAuth();
   return (
     <PageLayout
       title="MCA Research Center Overview"
-      userName="Dr. Priya Sharma"
+      userName={user?.name || "Coordinator"}
       roleLabel="Coordinator"
       navItems={coordinatorNav}
       activeItem="Research Centers"

@@ -8,6 +8,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 import { apiGet, type ApiItemResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -32,6 +33,7 @@ const formatDate = (value?: string) => {
 };
 
 function AdminSubmissionDetailsContent() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const submissionId = useMemo(() => searchParams.get("id") ?? "", [searchParams]);
   const [submission, setSubmission] = useState<Submission | null>(null);
@@ -66,7 +68,7 @@ function AdminSubmissionDetailsContent() {
   return (
     <PageLayout
       title="Submission Details"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Submissions"
@@ -128,6 +130,7 @@ function AdminSubmissionDetailsContent() {
 }
 
 export default function AdminSubmissionDetailsPage() {
+  const { user } = useAuth();
   return (
     <Suspense fallback={<p className="p-6 text-sm text-slate-500">Loading...</p>}>
       <AdminSubmissionDetailsContent />

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { PageLayout } from "@/components/PageLayout";
 import { DashboardCards } from "@/components/DashboardCards";
 import { facultyNav } from "@/data/roleNav";
-import { getMockIncentives, saveMockIncentives, IncentiveApplication, IncentiveCategory } from "@/lib/mockIncentives";
+import { getIncentives, createIncentive, IncentiveApplication, IncentiveCategory } from "@/lib/mockIncentives";
 import { Plus, IndianRupee, Clock, CheckCircle, FileText, X } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -38,21 +38,28 @@ export default function FacultyIncentives() {
     }
   };
 
+  const fetchIncentives = async () => {
+    try {
+      const data = await getIncentives();
+      // Only show faculty's own incentives
+      const myEmail = user?.email || "";
+      setIncentives(data.filter(i => i.facultyEmail.toLowerCase() === myEmail.toLowerCase()));
+    } catch (err) {
+      console.error("Failed to fetch incentives:", err);
+    }
+  };
+
   useEffect(() => {
-    const data = getMockIncentives();
-    // Only show faculty's own incentives, assuming email matches or it's just the mocked one.
-    setIncentives(data.filter(i => i.facultyEmail === (user?.email || "elizabeth.paul@univ.edu")));
+    fetchIncentives();
   }, [user]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newInc: IncentiveApplication = {
-      id: "INC-" + Math.floor(Math.random() * 10000),
-      facultyName: user?.name || "Dr. Elizabeth Paul",
-      facultyEmail: user?.email || "elizabeth.paul@univ.edu",
+    const newInc: Partial<IncentiveApplication> = {
+      facultyName: user?.name || "",
+      facultyEmail: user?.email || "",
       category,
       amountRequested: Number(amount),
-      dateApplied: new Date().toISOString(),
       status: "Pending Library",
       proofImage,
     };
@@ -70,12 +77,21 @@ export default function FacultyIncentives() {
       newInc.eventType = eventType;
     }
 
-    const all = getMockIncentives();
-    const updated = [...all, newInc];
-    saveMockIncentives(updated);
-    setIncentives(updated.filter(i => i.facultyEmail === newInc.facultyEmail));
-    setShowApplyModal(false);
-    setProofImage("");
+    try {
+      await createIncentive(newInc);
+      await fetchIncentives();
+      setShowApplyModal(false);
+      setProofImage("");
+      setAmount("");
+      setPubTitle("");
+      setPubJournal("");
+      setPatTitle("");
+      setPatNumber("");
+      setEventName("");
+    } catch (err) {
+      console.error("Failed to submit incentive:", err);
+      alert("Failed to submit application.");
+    }
   };
 
   const pendingCount = incentives.filter(i => i.status.includes("Pending")).length;

@@ -7,6 +7,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { facultyNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -38,6 +39,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function FacultyApprovalsPage() {
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [approvals, setApprovals] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,7 @@ export default function FacultyApprovalsPage() {
   return (
     <PageLayout
       title="Approvals"
-      userName="Dr. Emily Davis"
+      userName={user?.name || "Faculty"}
       roleLabel="Faculty Member"
       navItems={facultyNav}
       activeItem="Approvals"

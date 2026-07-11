@@ -9,6 +9,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { facultyNav } from "@/data/roleNav";
 import { apiGet, apiPostForm, type ApiItemResponse, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Scholar = {
   _id: string;
@@ -39,6 +40,7 @@ const formatDate = (value?: string) => {
 };
 
 function FacultyScholarDetailsContent() {
+  const { user } = useAuth();
   const searchParams = useSearchParams();
   const scholarId = useMemo(() => searchParams.get("id") ?? "", [searchParams]);
   const [scholar, setScholar] = useState<Scholar | null>(null);
@@ -137,7 +139,7 @@ function FacultyScholarDetailsContent() {
   return (
     <PageLayout
       title="Scholar Details"
-      userName="Dr. Emily Davis"
+      userName={user?.name || "Faculty"}
       roleLabel="Faculty Member"
       navItems={facultyNav}
       activeItem="Scholars"
@@ -273,6 +275,7 @@ function FacultyScholarDetailsContent() {
 }
 
 export default function FacultyScholarDetailsPage() {
+  const { user } = useAuth();
   return (
     <Suspense fallback={<p className="p-6 text-sm text-slate-500">Loading...</p>}>
       <FacultyScholarDetailsContent />

@@ -8,6 +8,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { scholarNav } from "@/data/roleNav";
 import { apiGet, type ApiItemResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type SubmissionFile = {
   url?: string;
@@ -37,6 +38,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function ScholarSubmissionDetailsPage() {
+  const { user } = useAuth();
   const params = useParams();
   const submissionId = useMemo(() => {
     const id = params?.id;
@@ -80,7 +82,7 @@ export default function ScholarSubmissionDetailsPage() {
   return (
     <PageLayout
       title="Submission Details"
-      userName="Scholar User"
+      userName={user?.name || "Scholar"}
       roleLabel="Scholar"
       navItems={scholarNav}
       activeItem="My Submissions"

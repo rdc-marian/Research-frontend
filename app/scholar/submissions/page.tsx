@@ -8,6 +8,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { scholarNav } from "@/data/roleNav";
 import { apiDelete, apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -37,6 +38,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function ScholarSubmissionsPage() {
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,13 +61,16 @@ export default function ScholarSubmissionsPage() {
   };
 
   useEffect(() => {
+    if (!user?._id) return;
     let isMounted = true;
 
     const load = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiGet<ApiListResponse<Submission>>("/submissions");
+        const response = await apiGet<ApiListResponse<Submission>>(
+          `/submissions?scholarId=${user._id}`
+        );
         if (!isMounted) return;
         setSubmissions(response.items);
       } catch (err) {
@@ -83,7 +88,7 @@ export default function ScholarSubmissionsPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?._id]);
 
   const rows = useMemo(
     () =>
@@ -124,7 +129,7 @@ export default function ScholarSubmissionsPage() {
   return (
     <PageLayout
       title="My Submissions"
-      userName="Scholar User"
+      userName={user?.name || "Scholar"}
       roleLabel="Scholar"
       navItems={scholarNav}
       activeItem="My Submissions"

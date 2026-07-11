@@ -5,11 +5,12 @@ import {
   CheckCircle,
   Clock,
   FileText,
-  Settings,
+  Edit2,
+  User,
   X,
   Plus,
+  Settings,
   Trash2,
-  Edit2,
 } from "lucide-react";
 import { DashboardCards } from "@/components/DashboardCards";
 import { PageLayout } from "@/components/PageLayout";
@@ -31,73 +32,32 @@ const defaultMetrics = [
   { label: "Approved papers", value: "0", icon: CheckCircle },
 ];
 
-// Default configurations for predefined tabs
-const DEFAULT_TABS_LIST = [
-  { id: "qualifications", label: "Educational qualifications", columns: ["Sl.No.", "Qualification", "Area of Specialization", "Year of passing", "Institution"], isPredefined: true },
-  { id: "thesis", label: "MPhil, PhD Thesis", columns: ["Sl.No.", "Degree", "Thesis Title", "Supervisor", "Year of Registration", "Status"], isPredefined: true },
-  { id: "experience", label: "Experience", columns: ["Sl.No.", "Designation", "Institution/Organization", "From Date", "To Date", "Duration"], isPredefined: true },
-  { id: "publications", label: "Publications", columns: ["Sl.No.", "Paper Title", "Authors", "Journal/Book Name", "Publish Date", "Indexing"], isPredefined: true },
-  { id: "patents", label: "Patent", columns: ["Sl.No.", "Patent Title", "Application No.", "Filing Date", "Inventors", "Status"], isPredefined: true },
-  { id: "consultancy", label: "Consultancy", columns: ["Sl.No.", "Project Title", "Client Organization", "Grant Received", "Year", "Status"], isPredefined: true },
-  { id: "memberships", label: "Membership in Professional Bodies", columns: ["Sl.No.", "Professional Body", "Membership Number", "Membership Type", "Validity"], isPredefined: true },
-  { id: "resource_person", label: "Resource person in Programmes", columns: ["Sl.No.", "Programme Title", "Host Institution", "Role / Topic", "Date"], isPredefined: true },
-  { id: "workshops", label: "Workshop/FDP/Training programme Attended", columns: ["Sl.No.", "Programme Name", "Organized By", "Venue / Platform", "Dates"], isPredefined: true },
-  { id: "awards", label: "Awards/Achievements/Others", columns: ["Sl.No.", "Award Name", "Awarding Body", "Category", "Year"], isPredefined: true },
-  { id: "programmes_organized", label: "Programmes organized", columns: ["Sl.No.", "Programme Title", "Sponsor/Collaborator", "Role", "Dates"], isPredefined: true },
-  { id: "funded_projects", label: "Funded Projects", columns: ["Sl.No.", "Project Title", "Funding Agency", "Amount Sanctioned", "Duration", "Status"], isPredefined: true },
-  { id: "expert_committees", label: "Faculty as members of Expert committees", columns: ["Sl.No.", "Committee Detail", "Institution / Board", "Role Assigned", "Year"], isPredefined: true },
-  { id: "editorial_boards", label: "Faculty as members of Editorial Boards", columns: ["Sl.No.", "Journal/Publication Name", "Publisher", "Role", "Period"], isPredefined: true }
+const DEFAULT_SCHOLAR_TABS = [
+  { id: "qualifications", label: "Educational qualifications", isPredefined: true, columns: ["Sl.No.", "Qualification", "Area of Specialization", "Year of Passing", "Institution"] },
+  { id: "thesis", label: "Ph.D Thesis Details", isPredefined: true, columns: ["Sl.No.", "Thesis Title", "University", "Registration Date", "Status"] },
+  { id: "experience", label: "Teaching / Research Experience", isPredefined: true, columns: ["Sl.No.", "Organization", "Designation", "From Date", "To Date"] },
+  { id: "publications", label: "Research Publications", isPredefined: true, columns: ["Sl.No.", "Publication Title", "Journal Name", "Year of Publication", "Impact Factor"] },
+  { id: "patents", label: "Patents Filed / Granted", isPredefined: true, columns: ["Sl.No.", "Patent Title", "Application No.", "Filing Date", "Status"] },
+  { id: "consultancy", label: "Consultancy Projects", isPredefined: true, columns: ["Sl.No.", "Project Title", "Client Organization", "Amount", "Status"] },
+  { id: "memberships", label: "Professional Memberships", isPredefined: true, columns: ["Sl.No.", "Professional Body", "Membership Number", "Membership Type", "Validity"] },
+  { id: "resource_person", label: "Resource Person Invites", isPredefined: true, columns: ["Sl.No.", "Event / Institution", "Topic", "Date", "Role"] },
+  { id: "workshops", label: "Workshops / Seminars Attended", isPredefined: true, columns: ["Sl.No.", "Programme Title", "Organized By", "Start Date", "Venue / Platform"] },
+  { id: "awards", label: "Awards & Recognitions", isPredefined: true, columns: ["Sl.No.", "Award Title", "Awarding Agency", "Year", "Category"] },
+  { id: "programmes", label: "Programmes Conducted", isPredefined: true, columns: ["Sl.No.", "Programme Title", "Funding Agency", "Date", "No. of Participants"] },
 ];
 
-const DEFAULT_TABS_DATA = {
-  qualifications: [
-    { qualification: "Ph.D.", area_of_specialization: "Social Work", year_of_passing: "2016", institution: "Gandhigram Rural Institute (Deemed University)" },
-    { qualification: "MA", area_of_specialization: "Sociology", year_of_passing: "2013", institution: "IGNOU, New Delhi" },
-    { qualification: "MA", area_of_specialization: "Public Administration", year_of_passing: "2011", institution: "IGNOU, New Delhi" },
-    { qualification: "MSW", area_of_specialization: "Social Work", year_of_passing: "2010", institution: "M G University Kottayam" },
-    { qualification: "BA", area_of_specialization: "Sociology", year_of_passing: "2008", institution: "M G University Kottayam" }
-  ],
-  thesis: [
-    { degree: "Ph.D.", thesis_title: "AI-Driven Healthcare Diagnostics in Rural Contexts", supervisor: "Dr. Elizabeth Paul", year_of_registration: "2024", status: "Ongoing" },
-    { degree: "M.Phil.", thesis_title: "Social Impact of Computer Literacy in Kerala", supervisor: "Dr. Thomas Mathew", year_of_registration: "2022", status: "Completed" }
-  ],
-  experience: [
-    { designation: "Junior Research Fellow", "institution/organization": "Center for Computer Applications, SJC", from_date: "01/06/2024", to_date: "Present", duration: "1.5 Years" },
-    { designation: "Guest Lecturer", "institution/organization": "SJC College", from_date: "01/08/2022", to_date: "30/03/2024", duration: "1 Year 8 Months" }
-  ],
-  publications: [
-    { paper_title: "A Survey on Deep Learning Techniques for Image Segmentation", authors: "Albin Joseph, Elizabeth Paul", "journal/book_name": "International Journal of Computer Science", publish_date: "Nov 2025", indexing: "Scopus, UGC CARE" }
-  ],
-  patents: [
-    { patent_title: "Real-time Medical Image Segmentation Device", "application_no.": "PAT-2026-9912", filing_date: "14/02/2026", inventors: "Albin Joseph, Elizabeth Paul", status: "Published" }
-  ],
-  consultancy: [
-    { project_title: "AI Integration in Agriculture Analytics", client_organization: "AgroTech Solutions", grant_received: "₹1,20,000", year: "2025", status: "Completed" }
-  ],
-  memberships: [
-    { professional_body: "Computer Society of India (CSI)", membership_number: "CSI-88271A", membership_type: "Life Member", validity: "2024 - Ongoing" }
-  ],
-  resource_person: [
-    { programme_title: "Advanced Machine Learning Workshop", host_institution: "M G University Department of CS", "role_/_topic": "Keynote Speaker on PyTorch", date: "12/04/2025" }
-  ],
-  workshops: [
-    { programme_name: "Deep Learning Foundations and Applications", organized_by: "IIT Madras", "venue_/_platform": "Online", dates: "10/06/2025 - 15/06/2025" }
-  ],
-  awards: [
-    { award_name: "Best Poster Presentation Award", awarding_body: "IEEE Kerala Section", category: "Conference Paper", year: "2025" }
-  ],
-  programmes_organized: [
-    { programme_title: "Hands-on Workshop on Git and GitHub", "sponsor/collaborator": "ACM Student Chapter", role: "Organizer & Speaker", dates: "14/09/2025" }
-  ],
-  funded_projects: [
-    { project_title: "Automatic Brain Lesion Detection using AI", funding_agency: "KSCSTE Kerala", amount_sanctioned: "₹2,50,000", duration: "1 Year", status: "Ongoing" }
-  ],
-  expert_committees: [
-    { committee_detail: "Curriculum Advisory Board for MCA", "institution_/_board": "SJC College Autonomous", role_assigned: "Student Representative Expert", year: "2025" }
-  ],
-  editorial_boards: [
-    { "journal/publication_name": "International Journal of Student Research", publisher: "SJC Publications", role: "Student Editor", period: "2024 - Present" }
-  ]
+const DEFAULT_SCHOLAR_TABS_DATA: Record<string, any[]> = {
+  qualifications: [],
+  thesis: [],
+  experience: [],
+  publications: [],
+  patents: [],
+  consultancy: [],
+  memberships: [],
+  resource_person: [],
+  workshops: [],
+  awards: [],
+  programmes: []
 };
 
 export default function ScholarDashboard() {
@@ -106,117 +66,116 @@ export default function ScholarDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Tabs configurations and dynamic records
-  const [tabsList, setTabsList] = useState<any[]>([]);
-  const [tabsData, setTabsData] = useState<Record<string, any[]>>({});
-  const [activeTabs, setActiveTabs] = useState<string[]>([]);
-  const [selectedTab, setSelectedTab] = useState<string>("qualifications");
+  // Profile modals and fields state
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [profileName, setProfileName] = useState("");
+  const [profileUniqueId, setProfileUniqueId] = useState("");
+  const [profileDept, setProfileDept] = useState("");
+  const [profileEmail, setProfileEmail] = useState("");
+  const [profileGuide, setProfileGuide] = useState("");
+  const [uniqueId, setUniqueId] = useState("");
 
-  // Modals state
+  // Scholar Tab Config & Data State
+  const [tabsList, setTabsList] = useState<any[]>([]);
+  const [activeTabs, setActiveTabs] = useState<string[]>([]);
+  const [selectedTab, setSelectedTab] = useState<string>("");
+  const [customTabsData, setCustomTabsData] = useState<Record<string, any[]>>({});
+
+  // Tab & Row modification Modals State
   const [showConfigModal, setShowConfigModal] = useState(false);
   const [showAddTabModal, setShowAddTabModal] = useState(false);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
-  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   // Custom delete confirmation modal state
   const [deleteConfirmType, setDeleteConfirmType] = useState<"tab" | "row" | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string>("");
   const [deleteTargetIndex, setDeleteTargetIndex] = useState<number>(-1);
 
-  // Form states for creating custom tabs
+  // Form Field States
   const [newTabLabel, setNewTabLabel] = useState("");
   const [newTabColumns, setNewTabColumns] = useState("");
-
-  // Form states for adding dynamic rows
   const [newRowValues, setNewRowValues] = useState<Record<string, string>>({});
 
-  // Profile fields state
-  const [profileName, setProfileName] = useState("");
-  const [profileUniqueId, setProfileUniqueId] = useState("");
-  const [profileDept, setProfileDept] = useState("");
-  const [profileEmail, setProfileEmail] = useState("");
-  const [profileGuide, setProfileGuide] = useState("");
-  const [profileAvatar, setProfileAvatar] = useState("");
+  const syncPreferences = async (updatedPrefs: any) => {
+    if (user?._id) {
+      try {
+        const res: any = await apiPatchJson(`/users/${user._id}`, {
+          preferences: {
+            ...(user.preferences || {}),
+            ...updatedPrefs
+          }
+        });
+        if (res?.item) login("", res.item);
+      } catch (err) {
+        console.error("Failed to sync preferences to backend:", err);
+      }
+    }
+  };
 
-  // Scholar detail displays
-  const [uniqueId, setUniqueId] = useState("MCKA-TS029");
-  const [avatarUrl, setAvatarUrl] = useState("/scholar-avatar.png");
-
-  // Initialize data and load config from LocalStorage
+  // Initialize Scholar profile custom items and tabs configuration from LocalStorage/user object
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Tabs list
-    const savedTabsList = localStorage.getItem("scholar_custom_tabs_list");
-    let list = DEFAULT_TABS_LIST;
-    if (savedTabsList) {
-      try {
-        list = JSON.parse(savedTabsList);
-      } catch (e) {
-        console.error(e);
-      }
+    // Load Unique ID
+    const savedId = user?.uniqueId || localStorage.getItem("scholar_profile_unique_id");
+    if (savedId) {
+      setUniqueId(savedId);
+      localStorage.setItem("scholar_profile_unique_id", savedId);
+    } else if (user?._id) {
+      const generatedId = `MCKA-SCH-${user._id.slice(-4).toUpperCase()}`;
+      setUniqueId(generatedId);
+      localStorage.setItem("scholar_profile_unique_id", generatedId);
     } else {
-      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(DEFAULT_TABS_LIST));
+      setUniqueId("");
     }
-    setTabsList(list);
 
-    // Tabs records
-    const savedTabsData = localStorage.getItem("scholar_custom_tabs_data");
-    let data = DEFAULT_TABS_DATA;
-    if (savedTabsData) {
-      try {
-        data = JSON.parse(savedTabsData);
-      } catch (e) {
-        console.error(e);
-      }
+    // Load tabs config
+    const prefTabs = user?.preferences?.scholar_custom_tabs_list;
+    const prefActive = user?.preferences?.scholar_active_tabs;
+    const prefData = user?.preferences?.scholar_custom_tabs_data;
+
+    const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem("scholar_custom_tabs_list");
+    const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem("scholar_active_tabs");
+    const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem("scholar_custom_tabs_data");
+
+    if (savedTabs) {
+      setTabsList(JSON.parse(savedTabs));
     } else {
-      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(DEFAULT_TABS_DATA));
+      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(DEFAULT_SCHOLAR_TABS));
+      setTabsList(DEFAULT_SCHOLAR_TABS);
     }
-    setTabsData(data);
 
-    // Active tabs
-    const savedActive = localStorage.getItem("scholar_active_tabs");
-    let active = ["qualifications", "publications", "patents", "workshops"];
     if (savedActive) {
-      try {
-        const parsed = JSON.parse(savedActive);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          active = parsed;
-        }
-      } catch (e) {
-        console.error(e);
-      }
+      const parsedActive = JSON.parse(savedActive);
+      setActiveTabs(parsedActive);
+      if (parsedActive.length > 0) setSelectedTab(parsedActive[0]);
     } else {
-      localStorage.setItem("scholar_active_tabs", JSON.stringify(active));
+      const defaultActive: string[] = [];
+      localStorage.setItem("scholar_active_tabs", JSON.stringify(defaultActive));
+      setActiveTabs(defaultActive);
+      setSelectedTab("");
     }
-    setActiveTabs(active);
 
-    if (active.length > 0) {
-      setSelectedTab(active[0]);
+    if (savedData) {
+      setCustomTabsData(JSON.parse(savedData));
+    } else {
+      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(DEFAULT_SCHOLAR_TABS_DATA));
+      setCustomTabsData(DEFAULT_SCHOLAR_TABS_DATA);
     }
-  }, []);
-
-  // Initialize Scholar profile custom items from LocalStorage
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedId = localStorage.getItem("scholar_profile_unique_id");
-    if (savedId) setUniqueId(savedId);
-
-    const savedAvatar = localStorage.getItem("scholar_profile_avatar");
-    if (savedAvatar) setAvatarUrl(savedAvatar);
   }, [user]);
 
-  // Load metrics stats
+  // Load metrics stats filtered by scholarId
   useEffect(() => {
+    if (!user?._id) return;
     let isMounted = true;
     const loadMetrics = async () => {
       try {
         setLoading(true);
         setError(null);
         const [submissionsRes, pendingRes, approvedRes] = await Promise.all([
-          apiGet<ApiListResponse<Submission>>("/submissions"),
-          apiGet<ApiListResponse<Submission>>("/submissions?status=Pending"),
-          apiGet<ApiListResponse<Submission>>("/submissions?status=Approved"),
+          apiGet<ApiListResponse<Submission>>(`/submissions?scholarId=${user._id}`),
+          apiGet<ApiListResponse<Submission>>(`/submissions?scholarId=${user._id}&status=Pending`),
+          apiGet<ApiListResponse<Submission>>(`/submissions?scholarId=${user._id}&status=Approved`),
         ]);
 
         if (!isMounted) return;
@@ -250,21 +209,18 @@ export default function ScholarDashboard() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?._id]);
 
   // Synchronize Edit profile form values when modal opens
   useEffect(() => {
     if (user && showEditProfileModal) {
       setProfileName(user.name || "");
       setProfileEmail(user.email || "");
-      setProfileDept(user.department || "MCA");
-      setProfileGuide(user.guide?.name || "Dr. Elizabeth Paul");
+      setProfileDept(user.department || "");
+      setProfileGuide(user.guide?.name || "");
       
       const savedId = localStorage.getItem("scholar_profile_unique_id");
-      setProfileUniqueId(savedId || "MCKA-TS029");
-      
-      const savedAvatar = localStorage.getItem("scholar_profile_avatar");
-      setProfileAvatar(savedAvatar || "/scholar-avatar.png");
+      setProfileUniqueId(savedId || (user._id ? `MCKA-SCH-${user._id.slice(-4).toUpperCase()}` : ""));
     }
   }, [user, showEditProfileModal]);
 
@@ -272,126 +228,120 @@ export default function ScholarDashboard() {
   const handleSaveProfile = async () => {
     if (!user?._id) return;
     try {
-      const updatedUser = {
-        ...user,
-        name: profileName,
-        email: profileEmail,
-        department: profileDept,
-        guide: { ...user.guide, name: profileGuide }
-      };
-
       localStorage.setItem("scholar_profile_unique_id", profileUniqueId);
-      localStorage.setItem("scholar_profile_avatar", profileAvatar);
 
       // Save changes to local database via API
-      await apiPatchJson("/users/" + user._id, {
+      const res: any = await apiPatchJson("/users/" + user._id, {
         name: profileName,
         email: profileEmail,
         department: profileDept,
+        uniqueId: profileUniqueId,
         guide: { name: profileGuide }
       });
 
       // Update state in view
       setUniqueId(profileUniqueId);
-      setAvatarUrl(profileAvatar);
 
       // Update context user immediately
-      login("", updatedUser);
+      if (res?.item) login("", res.item);
       setShowEditProfileModal(false);
     } catch (err) {
       console.error("Failed to save profile:", err);
     }
   };
 
-  // Toggle predefined active tabs in config checklist
+  // Toggle active tab checkbox configuration
   const toggleTabCheckbox = (tabId: string) => {
-    let newTabs = [...activeTabs];
-    if (newTabs.includes(tabId)) {
-      if (newTabs.length > 1) {
-        newTabs = newTabs.filter(id => id !== tabId);
-      }
-    } else {
-      newTabs.push(tabId);
-    }
-    setActiveTabs(newTabs);
-    localStorage.setItem("scholar_active_tabs", JSON.stringify(newTabs));
-    
-    if (!newTabs.includes(selectedTab)) {
-      setSelectedTab(newTabs[0]);
+    const nextActive = activeTabs.includes(tabId)
+      ? activeTabs.filter(id => id !== tabId)
+      : [...activeTabs, tabId];
+      
+    localStorage.setItem("scholar_active_tabs", JSON.stringify(nextActive));
+    setActiveTabs(nextActive);
+    syncPreferences({ scholar_active_tabs: nextActive });
+
+    if (selectedTab === tabId && nextActive.length > 0) {
+      setSelectedTab(nextActive[0]);
+    } else if (nextActive.length > 0 && !nextActive.includes(selectedTab)) {
+      setSelectedTab(nextActive[0]);
+    } else if (nextActive.length === 0) {
+      setSelectedTab("");
     }
   };
 
-  // Add a brand new custom tab
+  // Delete dynamic custom tab confirmation trigger
+  const handleDeleteTab = (tabId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDeleteConfirmType("tab");
+    setDeleteTargetId(tabId);
+  };
+
+  // Add brand new custom tab
   const handleCreateCustomTab = () => {
-    if (!newTabLabel.trim()) return;
-    
-    const tabId = "custom_tab_" + Date.now();
-    let cols = newTabColumns.split(",").map(c => c.trim()).filter(Boolean);
-    
-    if (cols.length === 0) {
-      cols = ["Title", "Details", "Date"];
-    }
-    
-    // Prefix Sl.No. if not present
-    if (!cols.includes("Sl.No.")) {
-      cols = ["Sl.No.", ...cols];
+    if (!newTabLabel.trim() || !newTabColumns.trim()) {
+      alert("Tab label and columns are required.");
+      return;
     }
 
-    const newTab = {
-      id: tabId,
-      label: newTabLabel.trim(),
-      columns: cols,
-      isPredefined: false
+    const newId = "custom_" + Date.now();
+    const colsArray = newTabColumns.split(",").map(c => c.trim()).filter(Boolean);
+    
+    // Ensure Sl.No. is the first header
+    if (!colsArray.includes("Sl.No.")) {
+      colsArray.unshift("Sl.No.");
+    }
+
+    const newTabConfig = {
+      id: newId,
+      label: newTabLabel,
+      isPredefined: false,
+      columns: colsArray
     };
 
-    const updatedList = [...tabsList, newTab];
-    setTabsList(updatedList);
-    localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(updatedList));
+    const nextList = [...tabsList, newTabConfig];
+    const nextActive = [...activeTabs, newId];
 
-    const updatedData = { ...tabsData, [tabId]: [] };
-    setTabsData(updatedData);
-    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+    localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(nextList));
+    localStorage.setItem("scholar_active_tabs", JSON.stringify(nextActive));
 
-    const updatedActive = [...activeTabs, tabId];
-    setActiveTabs(updatedActive);
-    localStorage.setItem("scholar_active_tabs", JSON.stringify(updatedActive));
+    setTabsList(nextList);
+    setActiveTabs(nextActive);
+    setSelectedTab(newId);
 
-    setSelectedTab(tabId);
+    // Initialize custom tab record rows
+    const nextData = { ...customTabsData, [newId]: [] };
+    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+    setCustomTabsData(nextData);
+
+    syncPreferences({
+      scholar_custom_tabs_list: nextList,
+      scholar_active_tabs: nextActive,
+      scholar_custom_tabs_data: nextData
+    });
+
     setNewTabLabel("");
     setNewTabColumns("");
     setShowAddTabModal(false);
   };
 
-  // Delete a custom tab
-  const handleDeleteTab = (tabId: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setDeleteConfirmType("tab");
-    setDeleteTargetId(tabId);
-  };
-
-  // Add new row of data to the active tab
+  // Add new row record
   const handleCreateRow = () => {
-    const activeTabConfig = tabsList.find(t => t.id === selectedTab);
-    if (!activeTabConfig) return;
+    if (!selectedTab) return;
+    const currentTabRows = customTabsData[selectedTab] || [];
+    const newEntry = { ...newRowValues };
 
-    const rowObj: Record<string, string> = {};
-    activeTabConfig.columns.forEach((col: string) => {
-      if (col === "Sl.No.") return;
-      const key = col.toLowerCase().replace(/\//g, "_").replace(/\s+/g, "_");
-      rowObj[key] = newRowValues[col] || "";
-    });
+    const nextRows = [...currentTabRows, newEntry];
+    const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-    const currentRows = tabsData[selectedTab] || [];
-    const updatedRows = [...currentRows, rowObj];
-    const updatedData = { ...tabsData, [selectedTab]: updatedRows };
-    setTabsData(updatedData);
-    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+    setCustomTabsData(nextData);
+    syncPreferences({ scholar_custom_tabs_data: nextData });
 
     setNewRowValues({});
     setShowAddRowModal(false);
   };
 
-  // Delete specific row from active tab
+  // Delete row record confirmation trigger
   const handleDeleteRow = (rowIdx: number) => {
     if (!selectedTab) return;
     setDeleteConfirmType("row");
@@ -402,31 +352,40 @@ export default function ScholarDashboard() {
   const executeDelete = () => {
     if (deleteConfirmType === "tab") {
       const tabId = deleteTargetId;
-      const updatedList = tabsList.filter(t => t.id !== tabId);
-      setTabsList(updatedList);
-      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(updatedList));
+      const nextList = tabsList.filter(t => t.id !== tabId);
+      const nextActive = activeTabs.filter(id => id !== tabId);
 
-      const updatedData = { ...tabsData };
-      delete updatedData[tabId];
-      setTabsData(updatedData);
-      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(nextList));
+      localStorage.setItem("scholar_active_tabs", JSON.stringify(nextActive));
+      
+      setTabsList(nextList);
+      setActiveTabs(nextActive);
 
-      const updatedActive = activeTabs.filter(id => id !== tabId);
-      setActiveTabs(updatedActive);
-      localStorage.setItem("scholar_active_tabs", JSON.stringify(updatedActive));
-
-      if (selectedTab === tabId && updatedActive.length > 0) {
-        setSelectedTab(updatedActive[0]);
+      if (selectedTab === tabId) {
+        setSelectedTab(nextActive[0] || "");
       }
+
+      const nextData = { ...customTabsData };
+      delete nextData[tabId];
+      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+      setCustomTabsData(nextData);
+
+      syncPreferences({
+        scholar_custom_tabs_list: nextList,
+        scholar_active_tabs: nextActive,
+        scholar_custom_tabs_data: nextData
+      });
     } else if (deleteConfirmType === "row") {
       const rowIdx = deleteTargetIndex;
       if (!selectedTab) return;
 
-      const currentRows = tabsData[selectedTab] || [];
-      const updatedRows = currentRows.filter((_, idx) => idx !== rowIdx);
-      const updatedData = { ...tabsData, [selectedTab]: updatedRows };
-      setTabsData(updatedData);
-      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(updatedData));
+      const currentTabRows = customTabsData[selectedTab] || [];
+      const nextRows = currentTabRows.filter((_, idx) => idx !== rowIdx);
+      const nextData = { ...customTabsData, [selectedTab]: nextRows };
+
+      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+      setCustomTabsData(nextData);
+      syncPreferences({ scholar_custom_tabs_data: nextData });
     }
 
     setDeleteConfirmType(null);
@@ -434,8 +393,9 @@ export default function ScholarDashboard() {
     setDeleteTargetIndex(-1);
   };
 
-  const activeTabConfig = tabsList.find(t => t.id === selectedTab) || tabsList[0];
-  const activeTabRows = tabsData[selectedTab] || [];
+  // Active tab setup
+  const activeTabConfig = tabsList.find(t => t.id === selectedTab);
+  const activeTabRows = customTabsData[selectedTab] || [];
 
   return (
     <PageLayout
@@ -455,16 +415,9 @@ export default function ScholarDashboard() {
       {/* Profile Card Section with solid colors matching website */}
       <div className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-sm mb-8">
         <div className="flex flex-col md:flex-row gap-6 items-start">
-          {/* Profile Photo */}
-          <div className="w-32 h-32 md:w-36 md:h-36 relative rounded-lg overflow-hidden border border-[color:var(--border)] flex-shrink-0 bg-slate-50">
-            <img
-              src={avatarUrl}
-              alt={user?.name || "Scholar User"}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150";
-              }}
-            />
+          {/* Profile Photo Placeholder Icon */}
+          <div className="w-32 h-32 md:w-36 md:h-36 relative rounded-lg overflow-hidden border border-[color:var(--border)] flex-shrink-0 bg-slate-50 flex items-center justify-center text-slate-400">
+            <User className="h-16 w-16" />
           </div>
           
           {/* Details */}
@@ -472,7 +425,7 @@ export default function ScholarDashboard() {
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="font-display text-2xl font-bold text-[#9B0302]">
-                  {user?.name || "Albin Joseph"}
+                  {user?.name || ""}
                 </h2>
                 <p className="text-sm text-slate-500 font-semibold uppercase tracking-wider">Scholar</p>
               </div>
@@ -487,7 +440,7 @@ export default function ScholarDashboard() {
             
             <div className="pt-2 text-xs space-y-1.5 text-slate-700 grid grid-cols-1 md:grid-cols-2 gap-x-4">
               <div>
-                <span className="font-semibold text-slate-500">Unique Id : </span>
+                <span className="font-semibold text-slate-500">Unique ID : </span>
                 <span className="font-bold text-slate-800">{uniqueId}</span>
               </div>
               <div>
@@ -496,22 +449,22 @@ export default function ScholarDashboard() {
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Email : </span>
-                <span className="font-bold text-[#9B0302]">{user?.email || "albin@univ.edu"}</span>
+                <span className="font-bold text-[#9B0302]">{user?.email || ""}</span>
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Research Guide : </span>
-                <span className="font-bold text-slate-800">{user?.guide?.name || "Dr. Elizabeth Paul"}</span>
+                <span className="font-bold text-slate-800">{user?.guide?.name || ""}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Registry tables with dynamic, non-predefined active tabs */}
-      <div className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-sm">
+      {/* Registry Portfolio Section */}
+      <div className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-sm mb-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[color:var(--border)] pb-3 mb-6 gap-3">
           <h2 className="font-display text-lg font-bold text-[#9B0302]">
-            Scholar Registry Profile
+            Scholar Registry Portfolio
           </h2>
           <div className="flex items-center gap-2">
             {activeTabConfig ? (
@@ -533,7 +486,7 @@ export default function ScholarDashboard() {
           </div>
         </div>
 
-        {/* Dynamic active tabs list with custom styles */}
+        {/* Dynamic active tabs list */}
         <div className="flex flex-wrap items-end border-b border-[color:var(--border)] gap-1 mb-6">
           {activeTabs.map((tabKey) => {
             const config = tabsList.find(t => t.id === tabKey);
@@ -574,7 +527,7 @@ export default function ScholarDashboard() {
           })}
         </div>
 
-        {/* Registry data table styled exactly like template image */}
+        {/* Registry data table */}
         {activeTabConfig ? (
           <div className="mt-4 border border-[#e5a09a] rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
@@ -644,7 +597,11 @@ export default function ScholarDashboard() {
               </table>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <p className="text-xs text-slate-400 italic text-center py-6">
+            No tabs configured. Click "Configure Tabs" to enable section items.
+          </p>
+        )}
       </div>
 
       {/* Edit Profile Modal */}
@@ -711,16 +668,6 @@ export default function ScholarDashboard() {
                   type="text"
                   value={profileGuide}
                   onChange={(e) => setProfileGuide(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Profile Photo URL</label>
-                <input
-                  type="text"
-                  value={profileAvatar}
-                  onChange={(e) => setProfileAvatar(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
                 />
               </div>
@@ -830,7 +777,7 @@ export default function ScholarDashboard() {
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Tab Label / Title</label>
                 <input
                   type="text"
-                  placeholder="e.g. My Outreach Projects"
+                  placeholder="e.g. Guest Lectures"
                   value={newTabLabel}
                   onChange={(e) => setNewTabLabel(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
@@ -841,7 +788,7 @@ export default function ScholarDashboard() {
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Table Columns (Comma Separated)</label>
                 <input
                   type="text"
-                  placeholder="e.g. Project Title, Sponsor, Amount, Year"
+                  placeholder="e.g. Topic, Institution, Date"
                   value={newTabColumns}
                   onChange={(e) => setNewTabColumns(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
@@ -919,7 +866,7 @@ export default function ScholarDashboard() {
         </div>
       )}
 
-      {/* Dynamic Confirmation Dialog Overlay */}
+      {/* Delete Confirmation Modal */}
       {deleteConfirmType !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-2xl border border-slate-100 text-center space-y-4 animate-in zoom-in-95 duration-200">

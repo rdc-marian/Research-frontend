@@ -57,7 +57,6 @@ export const adminNav: NavItem[] = [
 
 export const coordinatorNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/coordinator" },
-  { label: "Research Centers", icon: Building2, href: "/coordinator/departments" },
   { label: "Submissions", icon: FileText, href: "/coordinator/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/coordinator/approvals" },
   { label: "Scholar Portfolios", icon: Award, href: "/coordinator/portfolios" },

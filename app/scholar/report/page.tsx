@@ -314,7 +314,7 @@ export default function ScholarReportPage() {
                     Scholar Details
                   </h3>
                   <p className="py-1"><strong>Full Name:</strong> {user?.name}</p>
-                  <p className="py-1"><strong>Unique ID:</strong> MCKA-TS029</p>
+                  <p className="py-1"><strong>Unique ID:</strong> {typeof window !== 'undefined' ? (localStorage.getItem("scholar_profile_unique_id") || (user?._id ? "MCKA-SCH-" + user._id.slice(-4).toUpperCase() : "")) : ""}</p>
                   <p className="py-1"><strong>Registered Email:</strong> {user?.email}</p>
                 </div>
                 <div>
@@ -322,7 +322,7 @@ export default function ScholarReportPage() {
                     Academic Scope
                   </h3>
                   <p className="py-1"><strong>Research Center / Department:</strong> {user?.department || "MCA"}</p>
-                  <p className="py-1"><strong>Research Guide:</strong> {user?.guide?.name || "Dr. Elizabeth Paul"}</p>
+                  <p className="py-1"><strong>Research Guide:</strong> {user?.guide?.name || "Not Assigned"}</p>
                   <p className="py-1"><strong>Report Period:</strong> {formatDate(reportData.range.start.toISOString())} to {formatDate(reportData.range.end.toISOString())}</p>
                 </div>
               </div>

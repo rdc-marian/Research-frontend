@@ -7,6 +7,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -38,6 +39,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function AdminApprovalsPage() {
+  const { user } = useAuth();
   const [statusFilter, setStatusFilter] = useState("Pending");
   const [approvals, setApprovals] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,7 @@ export default function AdminApprovalsPage() {
   return (
     <PageLayout
       title="Approvals"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Approvals"

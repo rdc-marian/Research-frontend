@@ -6,7 +6,8 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
-import { apiGet, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiDelete, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -38,6 +39,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function AdminSubmissionsPage() {
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,12 +81,29 @@ export default function AdminSubmissionsPage() {
         submitted: formatDate(submission.submittedAt),
         status: <StatusBadge status={submission.status} />,
         action: (
-          <Link
-            href={`/admin/submissions/details?id=${submission._id}`}
-            className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
-          >
-            Review
-          </Link>
+          <div className="flex justify-end gap-2">
+            <Link
+              href={`/admin/submissions/details?id=${submission._id}`}
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50 transition-colors"
+            >
+              Review
+            </Link>
+            <button
+              onClick={async () => {
+                if (window.confirm(`Delete submission "${submission.title}"?`)) {
+                  try {
+                    await apiDelete(`/submissions/${submission._id}`);
+                    setSubmissions(submissions.filter((s) => s._id !== submission._id));
+                  } catch (err) {
+                    alert(err instanceof Error ? err.message : "Failed to delete submission");
+                  }
+                }
+              }}
+              className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
         ),
       })),
     [submissions]
@@ -93,7 +112,7 @@ export default function AdminSubmissionsPage() {
   return (
     <PageLayout
       title="Submissions"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Submissions"

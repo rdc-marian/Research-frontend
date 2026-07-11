@@ -16,6 +16,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 import { apiGet } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type ReportSummary = {
   total: number;
@@ -38,6 +39,7 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-600 shadow-sm";
 
 export default function AdminReportsPage() {
+  const { user } = useAuth();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [department, setDepartment] = useState("");
@@ -240,7 +242,7 @@ export default function AdminReportsPage() {
   return (
     <PageLayout
       title="Reports"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Reports"

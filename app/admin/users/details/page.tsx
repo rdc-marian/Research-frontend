@@ -7,7 +7,8 @@ import { ArrowLeft } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
-import { apiGet, type ApiItemResponse } from "@/lib/api";
+import { apiGet, apiPatchJson, type ApiItemResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type User = {
   _id: string;
@@ -63,6 +64,54 @@ function AdminUserDetailsContent() {
     };
   }, [userId]);
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+    department: "",
+    phone: "",
+    status: "Active",
+    password: "",
+  });
+
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        name: user.name || "",
+        email: user.email || "",
+        department: user.department || "",
+        phone: user.phone || "",
+        status: user.status || "Active",
+        password: "",
+      });
+    }
+  }, [user, isEditing]);
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      const payload: any = {
+        name: editForm.name,
+        email: editForm.email,
+        department: editForm.department,
+        phone: editForm.phone,
+        status: editForm.status,
+      };
+      if (editForm.password) {
+        payload.password = editForm.password;
+      }
+      const response = await apiPatchJson<ApiItemResponse<User>>(`/users/${userId}`, payload);
+      setUser(response.item);
+      setIsEditing(false);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to update user");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const roles = (user?.roles ?? (user?.role ? [user.role] : []))
     .map((role) => roleLabels[role] ?? role)
     .join(", ");
@@ -70,7 +119,7 @@ function AdminUserDetailsContent() {
   return (
     <PageLayout
       title="User Details"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Users"
@@ -90,32 +139,80 @@ function AdminUserDetailsContent() {
           {!loading && error ? <p className="text-sm text-red-600">Failed to load: {error}</p> : null}
           {!loading && !error && user ? (
             <div className="space-y-5">
-              <div>
-                <h2 className="font-display text-xl text-[color:var(--maroon-900)]">{user.name}</h2>
-                <p className="mt-1 text-sm text-slate-500">{user.email}</p>
-              </div>
-              <div className="grid gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 text-sm text-slate-700 md:grid-cols-2">
-                <p>
-                  <span className="font-semibold">Roles:</span> {roles || "N/A"}
-                </p>
-                <p>
-                  <span className="font-semibold">Department:</span> {user.department || "N/A"}
-                </p>
-                <p>
-                  <span className="font-semibold">Phone:</span> {user.phone || "N/A"}
-                </p>
-                <p className="flex items-center gap-2">
-                  <span className="font-semibold">Status:</span>
-                  <StatusBadge status={user.status ?? "Active"} />
-                </p>
-                <p>
-                  <span className="font-semibold">Research Center:</span>{" "}
-                  {user.researchCenter?.name ?? "N/A"}
-                </p>
-                <p>
-                  <span className="font-semibold">Guide:</span> {user.guide?.name ?? "N/A"}
-                </p>
-              </div>
+              {isEditing ? (
+                <div className="grid gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 text-sm text-slate-700 md:grid-cols-2">
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Name</label>
+                    <input className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email</label>
+                    <input className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Department</label>
+                    <input className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.department} onChange={(e) => setEditForm({ ...editForm, department: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</label>
+                    <input className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
+                    <select className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.status} onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}>
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                      <option value="PendingApproval">Pending Approval</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">New Password (leave blank to keep current)</label>
+                    <input type="password" placeholder="••••••••" className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} />
+                  </div>
+                  <div className="col-span-1 flex items-end gap-2 md:col-span-2">
+                    <button onClick={handleSave} disabled={saving} className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white disabled:opacity-60">
+                      {saving ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button onClick={() => setIsEditing(false)} className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs font-semibold text-slate-600">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="font-display text-xl text-[color:var(--maroon-900)]">{user.name}</h2>
+                      <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                    </div>
+                    <button onClick={() => setIsEditing(true)} className="rounded-full border border-[color:var(--border)] px-4 py-1.5 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50">
+                      Edit Details
+                    </button>
+                  </div>
+                  <div className="grid gap-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 text-sm text-slate-700 md:grid-cols-2">
+                    <p>
+                      <span className="font-semibold">Roles:</span> {roles || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Department:</span> {user.department || "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Phone:</span> {user.phone || "N/A"}
+                    </p>
+                    <p className="flex items-center gap-2">
+                      <span className="font-semibold">Status:</span>
+                      <StatusBadge status={user.status ?? "Active"} />
+                    </p>
+                    <p>
+                      <span className="font-semibold">Research Center:</span>{" "}
+                      {user.researchCenter?.name ?? "N/A"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Guide:</span> {user.guide?.name ?? "N/A"}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           ) : null}
         </div>
@@ -125,6 +222,7 @@ function AdminUserDetailsContent() {
 }
 
 export default function AdminUserDetailsPage() {
+  const { user } = useAuth();
   return (
     <Suspense fallback={<p className="p-6 text-sm text-slate-500">Loading...</p>}>
       <AdminUserDetailsContent />

@@ -7,7 +7,8 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
-import { apiGet, apiPostJson, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiPostJson, apiDelete, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type ResearchCenter = {
   _id: string;
@@ -40,6 +41,7 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-700 shadow-sm";
 
 export default function AdminResearchCentersPage() {
+  const { user } = useAuth();
   const [centers, setCenters] = useState<ResearchCenter[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
@@ -158,12 +160,29 @@ export default function AdminResearchCentersPage() {
         coordinator: center.coordinator?.name ?? "Unassigned",
         status: <StatusBadge status={center.status ?? "Active"} />,
         action: (
-          <Link
-            href={`/admin/research-centers/${center._id}`}
-            className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
-          >
-            Manage
-          </Link>
+          <div className="flex justify-end gap-2">
+            <Link
+              href={`/admin/research-centers/${center._id}`}
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50 transition-colors"
+            >
+              Manage
+            </Link>
+            <button
+              onClick={async () => {
+                if (window.confirm(`Delete research center "${center.name}"?`)) {
+                  try {
+                    await apiDelete(`/research-centers/${center._id}`);
+                    setCenters(centers.filter((c) => c._id !== center._id));
+                  } catch (err) {
+                    alert(err instanceof Error ? err.message : "Failed to delete research center");
+                  }
+                }
+              }}
+              className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 transition-colors"
+            >
+              Delete
+            </button>
+          </div>
         ),
       })),
     [centers]
@@ -172,7 +191,7 @@ export default function AdminResearchCentersPage() {
   return (
     <PageLayout
       title="Research Centers"
-      userName="Admin"
+      userName={user?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
       activeItem="Research Centers"

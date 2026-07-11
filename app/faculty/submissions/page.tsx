@@ -8,6 +8,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { facultyNav } from "@/data/roleNav";
 import { apiGet, apiPostForm, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -39,6 +40,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function FacultySubmissionsPage() {
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [scholars, setScholars] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -151,7 +153,7 @@ export default function FacultySubmissionsPage() {
   return (
     <PageLayout
       title="Submissions"
-      userName="Dr. Emily Davis"
+      userName={user?.name || "Faculty"}
       roleLabel="Faculty Member"
       navItems={facultyNav}
       activeItem="Submissions"

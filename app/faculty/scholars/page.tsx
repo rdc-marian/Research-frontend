@@ -8,6 +8,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { facultyNav } from "@/data/roleNav";
 import { apiGet, apiDelete, apiPostJson, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Scholar = {
   _id: string;
@@ -26,6 +27,7 @@ const columns = [
 ];
 
 export default function FacultyScholarsPage() {
+  const { user } = useAuth();
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,7 +171,7 @@ export default function FacultyScholarsPage() {
   return (
     <PageLayout
       title="Scholars"
-      userName="Dr. Emily Davis"
+      userName={user?.name || "Faculty"}
       roleLabel="Faculty Member"
       navItems={facultyNav}
       activeItem="Scholars"

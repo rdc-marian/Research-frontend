@@ -8,6 +8,7 @@ import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { coordinatorNav } from "@/data/roleNav";
 import { apiGet, type ApiListResponse } from "@/lib/api";
+import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
   _id: string;
@@ -39,6 +40,7 @@ const formatDate = (value?: string) => {
 };
 
 export default function CoordinatorSubmissionsPage() {
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,7 +96,7 @@ export default function CoordinatorSubmissionsPage() {
   return (
     <PageLayout
       title="Submissions (MCA)"
-      userName="Dr. Priya Sharma"
+      userName={user?.name || "Coordinator"}
       roleLabel="Coordinator"
       navItems={coordinatorNav}
       activeItem="Submissions"
