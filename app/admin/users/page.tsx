@@ -271,7 +271,7 @@ export default function AdminUsersPage() {
         status: <StatusBadge status={user.status ?? "Active"} />,
         action: (
           <div className="flex justify-end gap-2">
-            {user.status === "PendingApproval" && (
+            {user.status === "PendingApproval" && user.role !== "scholar" && (
               <button
                 type="button"
                 onClick={() => handleApproveUser(user)}

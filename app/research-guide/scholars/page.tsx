@@ -7,7 +7,7 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { researchGuideNav } from "@/data/roleNav";
-import { apiGet, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiPatchJson, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 type Scholar = {
@@ -35,34 +35,43 @@ export default function ResearchGuideScholarsPage() {
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [approvingScholarId, setApprovingScholarId] = useState<string | null>(null);
+
+  const loadScholars = async () => {
+    if (!user?._id) return;
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await apiGet<ApiListResponse<Scholar>>("/users?role=scholar");
+      
+      // Filter scholars assigned under this particular guide
+      const filtered = response.items.filter(
+        (s) => s.guide?._id === user._id
+      );
+      setScholars(filtered);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load scholars");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (!user?._id) return;
-    let isMounted = true;
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await apiGet<ApiListResponse<Scholar>>("/users?role=scholar");
-        if (!isMounted) return;
-        
-        // Filter scholars assigned under this particular guide
-        const filtered = response.items.filter(
-          (s) => s.guide?._id === user._id
-        );
-        setScholars(filtered);
-      } catch (err) {
-        if (!isMounted) return;
-        setError(err instanceof Error ? err.message : "Failed to load scholars");
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    };
-    load();
-    return () => {
-      isMounted = false;
-    };
+    loadScholars();
   }, [user?._id]);
+
+  const handleApproveScholar = async (scholar: Scholar) => {
+    try {
+      setApprovingScholarId(scholar._id);
+      await apiPatchJson(`/users/${scholar._id}`, { status: "Active" });
+      await loadScholars();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to approve scholar";
+      alert(message);
+    } finally {
+      setApprovingScholarId(null);
+    }
+  };
 
   const rows = useMemo(
     () =>
@@ -73,15 +82,27 @@ export default function ResearchGuideScholarsPage() {
         department: scholar.department ?? "N/A",
         status: <StatusBadge status={scholar.status ?? "Active"} />,
         action: (
-          <Link
-            href={`/research-guide/scholars/details?id=${scholar._id}`}
-            className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
-          >
-            View
-          </Link>
+          <div className="flex justify-end gap-2">
+            {scholar.status === "PendingApproval" && (
+              <button
+                type="button"
+                onClick={() => handleApproveScholar(scholar)}
+                disabled={approvingScholarId === scholar._id}
+                className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+              >
+                {approvingScholarId === scholar._id ? "Approving..." : "Approve"}
+              </button>
+            )}
+            <Link
+              href={`/research-guide/scholars/details?id=${scholar._id}`}
+              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)]"
+            >
+              View
+            </Link>
+          </div>
         ),
       })),
-    [scholars]
+    [scholars, approvingScholarId]
   );
 
   return (

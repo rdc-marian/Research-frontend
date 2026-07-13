@@ -44,6 +44,7 @@ export default function Home() {
   const [regEmail, setRegEmail] = useState("");
   const [regRole, setRegRole] = useState("");
   const [regDept, setRegDept] = useState("");
+  const [regGuideId, setRegGuideId] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
@@ -94,14 +95,23 @@ export default function Home() {
     setRegEmail("");
     setRegRole("");
     setRegDept("");
+    setRegGuideId("");
     setRegPassword("");
     setRegConfirmPassword("");
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!regName.trim() || !regEmail.trim() || !regRole || !regDept || !regPassword || !regConfirmPassword) {
+    if (!regName.trim() || !regEmail.trim() || !regRole || !regPassword || !regConfirmPassword) {
       alert("Please fill in all fields.");
+      return;
+    }
+    if (regRole === "scholar" && !regGuideId) {
+      alert("Please select a research guide.");
+      return;
+    }
+    if (regRole !== "scholar" && !regDept) {
+      alert("Please select a research center.");
       return;
     }
     if (regPassword !== regConfirmPassword) {
@@ -119,12 +129,27 @@ export default function Home() {
         return;
       }
 
+      let guideId: string | undefined = undefined;
+      let researchCenterId: string | undefined = undefined;
+      let department: string | undefined = regDept;
+
+      if (regRole === "scholar") {
+        guideId = regGuideId;
+        const selectedGuide = users.find(u => u._id === regGuideId);
+        if (selectedGuide) {
+          researchCenterId = selectedGuide.researchCenter?._id || selectedGuide.researchCenter;
+          department = selectedGuide.department;
+        }
+      }
+
       await apiPostJson("/users", {
         name: regName.trim(),
         email: regEmail.trim(),
         role: regRole,
         roles: [regRole],
-        department: regDept,
+        department: department,
+        researchCenterId: researchCenterId,
+        guideId: guideId,
         password: regPassword,
         status: "PendingApproval"
       });
@@ -469,28 +494,52 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Research Center <span className="text-slate-400 font-normal capitalize">(Optional)</span></label>
-                  <div className="relative">
-                    <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <select
-                      value={regDept}
-                      onChange={(e) => setRegDept(e.target.value)}
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all cursor-pointer appearance-none"
-                    >
-                      <option value="" disabled>-- Select center --</option>
-                      {availableDepartments.map((dept) => (
-                        <option key={dept._id} value={dept.name}>{dept.name}</option>
-                      ))}
-                      {availableDepartments.length === 0 && (
-                        <>
-                          <option value="MCA">MCA</option>
-                          <option value="Computer Science">Computer Science</option>
-                        </>
-                      )}
-                    </select>
+                {regRole === "scholar" ? (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Research Guide</label>
+                    <div className="relative">
+                      <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <select
+                        required
+                        value={regGuideId}
+                        onChange={(e) => setRegGuideId(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all cursor-pointer appearance-none"
+                      >
+                        <option value="" disabled>-- Select guide --</option>
+                        {users
+                          .filter((u) => u.role === "research_guide" || u.roles?.includes("research_guide"))
+                          .map((guide) => (
+                            <option key={guide._id} value={guide._id}>
+                              {guide.name} ({guide.department || "No Department"})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Research Center <span className="text-slate-400 font-normal capitalize">(Optional)</span></label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <select
+                        value={regDept}
+                        onChange={(e) => setRegDept(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all cursor-pointer appearance-none"
+                      >
+                        <option value="" disabled>-- Select center --</option>
+                        {availableDepartments.map((dept) => (
+                          <option key={dept._id} value={dept.name}>{dept.name}</option>
+                        ))}
+                        {availableDepartments.length === 0 && (
+                          <>
+                            <option value="MCA">MCA</option>
+                            <option value="Computer Science">Computer Science</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Password</label>
