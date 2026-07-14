@@ -115,6 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } else {
           setUser(null);
+          Cookies.remove("token");
           const isProtected = ["/admin", "/coordinator", "/faculty", "/research-guide", "/scholar", "/library"].some(
             (prefix) => pathname.startsWith(prefix)
           );
@@ -127,6 +128,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           console.error("Auto-auth resolution failed:", error);
         }
         if (isMounted) setUser(null);
+        Cookies.remove("token");
         
         const isProtected = ["/admin", "/coordinator", "/faculty", "/research-guide", "/scholar", "/library"].some(
           (prefix) => pathname.startsWith(prefix)
@@ -146,6 +148,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [pathname, router]);
 
   const login = (token: string, userData: User) => {
+    Cookies.set("token", token, { expires: 1, secure: true, sameSite: "lax" });
     setUser(userData);
     syncUserToLocalStorage(userData);
 
@@ -178,6 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (e) {
       console.error("Failed to clear server session:", e);
     }
+    Cookies.remove("token");
     setUser(null);
     router.push("/");
   };

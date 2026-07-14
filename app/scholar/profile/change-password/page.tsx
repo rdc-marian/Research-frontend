@@ -12,7 +12,7 @@ const inputClass =
   "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--maroon-600)]";
 
 export default function ScholarChangePasswordPage() {
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -32,10 +32,13 @@ export default function ScholarChangePasswordPage() {
 
     setLoading(true);
     try {
-      await apiPostJson("/auth/change-password", {
+      const res = await apiPostJson<{ token: string; user: any }>("/auth/change-password", {
         oldPassword,
         newPassword,
       });
+      if (res && res.token && res.user) {
+        login(res.token, res.user);
+      }
       setSuccess("Password updated successfully");
       setOldPassword("");
       setNewPassword("");
