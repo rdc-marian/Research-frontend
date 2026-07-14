@@ -111,8 +111,9 @@ export default function ScholarReportPage() {
       // Get Custom registry tabs data from localStorage
       let customDataFiltered: any[] = [];
       try {
-        const savedTabsList = localStorage.getItem("scholar_custom_tabs_list");
-        const savedTabsData = localStorage.getItem("scholar_custom_tabs_data");
+        const userIdKey = user._id;
+        const savedTabsList = localStorage.getItem(`scholar_${userIdKey}_custom_tabs_list`);
+        const savedTabsData = localStorage.getItem(`scholar_${userIdKey}_custom_tabs_data`);
         if (savedTabsList && savedTabsData) {
           const list = JSON.parse(savedTabsList);
           const data = JSON.parse(savedTabsData);
@@ -314,7 +315,7 @@ export default function ScholarReportPage() {
                     Scholar Details
                   </h3>
                   <p className="py-1"><strong>Full Name:</strong> {user?.name}</p>
-                  <p className="py-1"><strong>Unique ID:</strong> {typeof window !== 'undefined' ? (localStorage.getItem("scholar_profile_unique_id") || (user?._id ? "MCKA-SCH-" + user._id.slice(-4).toUpperCase() : "")) : ""}</p>
+                  <p className="py-1"><strong>Unique ID:</strong> {typeof window !== 'undefined' && user?._id ? (localStorage.getItem(`scholar_${user._id}_profile_unique_id`) || "MCKA-SCH-" + user._id.slice(-4).toUpperCase()) : ""}</p>
                   <p className="py-1"><strong>Registered Email:</strong> {user?.email}</p>
                 </div>
                 <div>

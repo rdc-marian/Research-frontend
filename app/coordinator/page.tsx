@@ -203,19 +203,20 @@ export default function CoordinatorDashboard() {
       }
     };
 
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && user?._id) {
+      const userIdKey = user._id;
       const prefTabs = user?.preferences?.coordinator_tabs_config;
       const prefActive = user?.preferences?.coordinator_active_tabs;
       const prefData = user?.preferences?.coordinator_custom_tabs_data;
 
-      const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem("coordinator_tabs_config");
-      const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem("coordinator_active_tabs");
-      const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem("coordinator_custom_tabs_data");
+      const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem(`coordinator_${userIdKey}_tabs_config`);
+      const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem(`coordinator_${userIdKey}_active_tabs`);
+      const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem(`coordinator_${userIdKey}_custom_tabs_data`);
 
       if (savedTabs) {
         setTabsList(JSON.parse(savedTabs));
       } else {
-        localStorage.setItem("coordinator_tabs_config", JSON.stringify(DEFAULT_COORDINATOR_TABS));
+        localStorage.setItem(`coordinator_${userIdKey}_tabs_config`, JSON.stringify(DEFAULT_COORDINATOR_TABS));
         setTabsList(DEFAULT_COORDINATOR_TABS);
       }
 
@@ -225,7 +226,7 @@ export default function CoordinatorDashboard() {
         if (parsedActive.length > 0) setSelectedTab(parsedActive[0]);
       } else {
         const defaultActive = DEFAULT_COORDINATOR_TABS.map(t => t.id);
-        localStorage.setItem("coordinator_active_tabs", JSON.stringify(defaultActive));
+        localStorage.setItem(`coordinator_${userIdKey}_active_tabs`, JSON.stringify(defaultActive));
         setActiveTabs(defaultActive);
         setSelectedTab(defaultActive[0]);
       }
@@ -233,19 +234,19 @@ export default function CoordinatorDashboard() {
       if (savedData) {
         setCustomTabsData(JSON.parse(savedData));
       } else {
-        localStorage.setItem("coordinator_custom_tabs_data", JSON.stringify(DEFAULT_COORDINATOR_TABS_DATA));
+        localStorage.setItem(`coordinator_${userIdKey}_custom_tabs_data`, JSON.stringify(DEFAULT_COORDINATOR_TABS_DATA));
         setCustomTabsData(DEFAULT_COORDINATOR_TABS_DATA);
       }
 
       // Load Profile fields from database or localstorage
-      setProfileName(user?.name || localStorage.getItem("coordinator_profile_name") || "");
-      setProfileDesignation(user?.designation || localStorage.getItem("coordinator_profile_designation") || "");
-      setProfileUniqueId(user?.uniqueId || localStorage.getItem("coordinator_profile_unique_id") || (user?._id ? `MCKA-COORD-${user._id.slice(-4).toUpperCase()}` : ""));
-      setProfileEmail(user?.email || localStorage.getItem("coordinator_profile_email") || "");
-      setProfileDept(user?.department || localStorage.getItem("coordinator_profile_dept") || "");
-      setProfileCenter(localStorage.getItem("coordinator_profile_center") || "");
-      setProfileAvatar(user?.avatar || localStorage.getItem("coordinator_profile_avatar") || "");
-      setProfileAcademicYear(user?.academicYear || localStorage.getItem("coordinator_profile_academic_year") || "");
+      setProfileName(user?.name || localStorage.getItem(`coordinator_${userIdKey}_profile_name`) || "");
+      setProfileDesignation(user?.designation || localStorage.getItem(`coordinator_${userIdKey}_profile_designation`) || "");
+      setProfileUniqueId(user?.uniqueId || localStorage.getItem(`coordinator_${userIdKey}_profile_unique_id`) || `MCKA-COORD-${user._id.slice(-4).toUpperCase()}`);
+      setProfileEmail(user?.email || localStorage.getItem(`coordinator_${userIdKey}_profile_email`) || "");
+      setProfileDept(user?.department || localStorage.getItem(`coordinator_${userIdKey}_profile_dept`) || "");
+      setProfileCenter(localStorage.getItem(`coordinator_${userIdKey}_profile_center`) || "");
+      setProfileAvatar(user?.avatar || localStorage.getItem(`coordinator_${userIdKey}_profile_avatar`) || "");
+      setProfileAcademicYear(user?.academicYear || localStorage.getItem(`coordinator_${userIdKey}_profile_academic_year`) || "");
     }
 
     return () => {
@@ -259,16 +260,18 @@ export default function CoordinatorDashboard() {
       alert("Name is required.");
       return;
     }
+    if (!user?._id) return;
+    const userIdKey = user._id;
 
     // Write profile data to localStorage
-    localStorage.setItem("coordinator_profile_name", profileName);
-    localStorage.setItem("coordinator_profile_designation", profileDesignation);
-    localStorage.setItem("coordinator_profile_unique_id", profileUniqueId);
-    localStorage.setItem("coordinator_profile_email", profileEmail);
-    localStorage.setItem("coordinator_profile_dept", profileDept);
-    localStorage.setItem("coordinator_profile_center", profileCenter);
-    localStorage.setItem("coordinator_profile_avatar", profileAvatar);
-    localStorage.setItem("coordinator_profile_academic_year", profileAcademicYear);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_name`, profileName);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_designation`, profileDesignation);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_unique_id`, profileUniqueId);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_email`, profileEmail);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_dept`, profileDept);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_center`, profileCenter);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_avatar`, profileAvatar);
+    localStorage.setItem(`coordinator_${userIdKey}_profile_academic_year`, profileAcademicYear);
 
     // Patch global user context
     if (user?._id) {
@@ -293,11 +296,12 @@ export default function CoordinatorDashboard() {
 
   // Toggle active tab state
   const toggleTabCheckbox = (tabId: string) => {
+    if (!user?._id) return;
     const nextActive = activeTabs.includes(tabId)
       ? activeTabs.filter(id => id !== tabId)
       : [...activeTabs, tabId];
 
-    localStorage.setItem("coordinator_active_tabs", JSON.stringify(nextActive));
+    localStorage.setItem(`coordinator_${user._id}_active_tabs`, JSON.stringify(nextActive));
     setActiveTabs(nextActive);
 
     if (user?._id) {
@@ -351,8 +355,10 @@ export default function CoordinatorDashboard() {
     const nextList = [...tabsList, newTabConfig];
     const nextActive = [...activeTabs, newId];
 
-    localStorage.setItem("coordinator_tabs_config", JSON.stringify(nextList));
-    localStorage.setItem("coordinator_active_tabs", JSON.stringify(nextActive));
+    if (user?._id) {
+      localStorage.setItem(`coordinator_${user._id}_tabs_config`, JSON.stringify(nextList));
+      localStorage.setItem(`coordinator_${user._id}_active_tabs`, JSON.stringify(nextActive));
+    }
 
     setTabsList(nextList);
     setActiveTabs(nextActive);
@@ -360,7 +366,9 @@ export default function CoordinatorDashboard() {
 
     // Init custom tab record rows
     const nextData = { ...customTabsData, [newId]: [] };
-    localStorage.setItem("coordinator_custom_tabs_data", JSON.stringify(nextData));
+    if (user?._id) {
+      localStorage.setItem(`coordinator_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
+    }
     setCustomTabsData(nextData);
 
     if (user?._id) {
@@ -389,7 +397,9 @@ export default function CoordinatorDashboard() {
     const nextRows = [...currentTabRows, newEntry];
     const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-    localStorage.setItem("coordinator_custom_tabs_data", JSON.stringify(nextData));
+    if (user?._id) {
+      localStorage.setItem(`coordinator_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
+    }
     setCustomTabsData(nextData);
 
     if (user?._id) {
@@ -415,13 +425,14 @@ export default function CoordinatorDashboard() {
 
   // Perform actual deletion of tab or row from custom state confirmation
   const executeDelete = () => {
+    if (!user?._id) return;
     if (deleteConfirmType === "tab") {
       const tabId = deleteTargetId;
       const nextList = tabsList.filter(t => t.id !== tabId);
       const nextActive = activeTabs.filter(id => id !== tabId);
 
-      localStorage.setItem("coordinator_tabs_config", JSON.stringify(nextList));
-      localStorage.setItem("coordinator_active_tabs", JSON.stringify(nextActive));
+      localStorage.setItem(`coordinator_${user._id}_tabs_config`, JSON.stringify(nextList));
+      localStorage.setItem(`coordinator_${user._id}_active_tabs`, JSON.stringify(nextActive));
 
       setTabsList(nextList);
       setActiveTabs(nextActive);
@@ -432,7 +443,7 @@ export default function CoordinatorDashboard() {
 
       const nextData = { ...customTabsData };
       delete nextData[tabId];
-      localStorage.setItem("coordinator_custom_tabs_data", JSON.stringify(nextData));
+      localStorage.setItem(`coordinator_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
       setCustomTabsData(nextData);
 
       if (user?._id) {
@@ -454,7 +465,7 @@ export default function CoordinatorDashboard() {
       const nextRows = currentTabRows.filter((_, idx) => idx !== rowIdx);
       const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-      localStorage.setItem("coordinator_custom_tabs_data", JSON.stringify(nextData));
+      localStorage.setItem(`coordinator_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
       setCustomTabsData(nextData);
 
       if (user?._id) {

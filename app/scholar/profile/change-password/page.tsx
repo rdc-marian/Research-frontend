@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { scholarNav } from "@/data/roleNav";
 import { useAuth } from "@/components/AuthProvider";
@@ -9,13 +9,16 @@ import { useState } from "react";
 import { apiPostJson } from "@/lib/api";
 
 const inputClass =
-  "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--maroon-600)]";
+  "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 pr-10 py-2 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[color:var(--maroon-600)]";
 
 export default function ScholarChangePasswordPage() {
   const { user, login } = useAuth();
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
@@ -90,40 +93,67 @@ export default function ScholarChangePasswordPage() {
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="currentPassword">
               Current password
             </label>
-            <input
-              id="currentPassword"
-              type="password"
-              required
-              className={inputClass}
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                id="currentPassword"
+                type={showOldPassword ? "text" : "password"}
+                required
+                className={inputClass}
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowOldPassword(!showOldPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 mt-1 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="newPassword">
               New password
             </label>
-            <input
-              id="newPassword"
-              type="password"
-              required
-              className={inputClass}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                id="newPassword"
+                type={showNewPassword ? "text" : "password"}
+                required
+                className={inputClass}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword(!showNewPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 mt-1 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="confirmPassword">
               Confirm new password
             </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              required
-              className={inputClass}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
+            <div className="relative">
+              <input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                required
+                className={inputClass}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 mt-1 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

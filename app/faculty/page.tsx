@@ -93,6 +93,8 @@ export default function FacultyDashboard() {
   const [profileDept, setProfileDept] = useState("");
   const [profileCenter, setProfileCenter] = useState("");
   const [profileAvatar, setProfileAvatar] = useState("");
+  const [profileSpecialization, setProfileSpecialization] = useState("");
+  const [profileExperience, setProfileExperience] = useState("");
 
   // New tab form
   const [newTabLabel, setNewTabLabel] = useState("");
@@ -152,19 +154,20 @@ export default function FacultyDashboard() {
     loadData();
 
     // Load active tab layout and records from localStorage/preferences
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && user?._id) {
+      const userIdKey = user._id;
       const prefTabs = user?.preferences?.faculty_tabs_config;
       const prefActive = user?.preferences?.faculty_active_tabs;
       const prefData = user?.preferences?.faculty_custom_tabs_data;
 
-      const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem("faculty_tabs_config");
-      const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem("faculty_active_tabs");
-      const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem("faculty_custom_tabs_data");
+      const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem(`faculty_${userIdKey}_tabs_config`);
+      const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem(`faculty_${userIdKey}_active_tabs`);
+      const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem(`faculty_${userIdKey}_custom_tabs_data`);
 
       if (savedTabs) {
         setTabsList(JSON.parse(savedTabs));
       } else {
-        localStorage.setItem("faculty_tabs_config", JSON.stringify(DEFAULT_FACULTY_TABS));
+        localStorage.setItem(`faculty_${userIdKey}_tabs_config`, JSON.stringify(DEFAULT_FACULTY_TABS));
         setTabsList(DEFAULT_FACULTY_TABS);
       }
 
@@ -174,7 +177,7 @@ export default function FacultyDashboard() {
         if (parsedActive.length > 0) setSelectedTab(parsedActive[0]);
       } else {
         const defaultActive = DEFAULT_FACULTY_TABS.map(t => t.id);
-        localStorage.setItem("faculty_active_tabs", JSON.stringify(defaultActive));
+        localStorage.setItem(`faculty_${userIdKey}_active_tabs`, JSON.stringify(defaultActive));
         setActiveTabs(defaultActive);
         setSelectedTab(defaultActive[0]);
       }
@@ -182,18 +185,20 @@ export default function FacultyDashboard() {
       if (savedData) {
         setCustomTabsData(JSON.parse(savedData));
       } else {
-        localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(DEFAULT_FACULTY_TABS_DATA));
+        localStorage.setItem(`faculty_${userIdKey}_custom_tabs_data`, JSON.stringify(DEFAULT_FACULTY_TABS_DATA));
         setCustomTabsData(DEFAULT_FACULTY_TABS_DATA);
       }
 
       // Load Profile fields from database or localstorage
-      setProfileName(user?.name || localStorage.getItem("faculty_profile_name") || "");
-      setProfileDesignation(user?.designation || localStorage.getItem("faculty_profile_designation") || "");
-      setProfileUniqueId(user?.uniqueId || localStorage.getItem("faculty_profile_unique_id") || (user?._id ? `MCKA-FAC-${user._id.slice(-4).toUpperCase()}` : ""));
-      setProfileEmail(user?.email || localStorage.getItem("faculty_profile_email") || "");
-      setProfileDept(user?.department || localStorage.getItem("faculty_profile_dept") || "");
-      setProfileCenter(localStorage.getItem("faculty_profile_center") || "");
-      setProfileAvatar(user?.avatar || localStorage.getItem("faculty_profile_avatar") || "");
+      setProfileName(user?.name || localStorage.getItem(`faculty_${userIdKey}_profile_name`) || "");
+      setProfileDesignation(user?.designation || localStorage.getItem(`faculty_${userIdKey}_profile_designation`) || "");
+      setProfileUniqueId(user?.uniqueId || localStorage.getItem(`faculty_${userIdKey}_profile_unique_id`) || `MCKA-FAC-${user._id.slice(-4).toUpperCase()}`);
+      setProfileEmail(user?.email || localStorage.getItem(`faculty_${userIdKey}_profile_email`) || "");
+      setProfileDept(user?.department || localStorage.getItem(`faculty_${userIdKey}_profile_dept`) || "");
+      setProfileCenter(localStorage.getItem(`faculty_${userIdKey}_profile_center`) || "");
+      setProfileAvatar(user?.avatar || localStorage.getItem(`faculty_${userIdKey}_profile_avatar`) || "");
+      setProfileSpecialization(user?.preferences?.faculty_profile_specialization || localStorage.getItem(`faculty_${userIdKey}_profile_specialization`) || "");
+      setProfileExperience(user?.preferences?.faculty_profile_experience || localStorage.getItem(`faculty_${userIdKey}_profile_experience`) || "");
     }
 
     return () => {
@@ -207,15 +212,19 @@ export default function FacultyDashboard() {
       alert("Name is required.");
       return;
     }
+    if (!user?._id) return;
+    const userIdKey = user._id;
     
     // Write profile data to localStorage
-    localStorage.setItem("faculty_profile_name", profileName);
-    localStorage.setItem("faculty_profile_designation", profileDesignation);
-    localStorage.setItem("faculty_profile_unique_id", profileUniqueId);
-    localStorage.setItem("faculty_profile_email", profileEmail);
-    localStorage.setItem("faculty_profile_dept", profileDept);
-    localStorage.setItem("faculty_profile_center", profileCenter);
-    localStorage.setItem("faculty_profile_avatar", profileAvatar);
+    localStorage.setItem(`faculty_${userIdKey}_profile_name`, profileName);
+    localStorage.setItem(`faculty_${userIdKey}_profile_designation`, profileDesignation);
+    localStorage.setItem(`faculty_${userIdKey}_profile_unique_id`, profileUniqueId);
+    localStorage.setItem(`faculty_${userIdKey}_profile_email`, profileEmail);
+    localStorage.setItem(`faculty_${userIdKey}_profile_dept`, profileDept);
+    localStorage.setItem(`faculty_${userIdKey}_profile_center`, profileCenter);
+    localStorage.setItem(`faculty_${userIdKey}_profile_avatar`, profileAvatar);
+    localStorage.setItem(`faculty_${userIdKey}_profile_specialization`, profileSpecialization);
+    localStorage.setItem(`faculty_${userIdKey}_profile_experience`, profileExperience);
 
     // Patch global user context
     if (user?._id) {
@@ -226,7 +235,12 @@ export default function FacultyDashboard() {
           department: profileDept,
           designation: profileDesignation,
           uniqueId: profileUniqueId,
-          avatar: profileAvatar
+          avatar: profileAvatar,
+          preferences: {
+            ...(user.preferences || {}),
+            faculty_profile_specialization: profileSpecialization,
+            faculty_profile_experience: profileExperience
+          }
         });
         login("", updatedUser);
       } catch (err) {
@@ -239,11 +253,12 @@ export default function FacultyDashboard() {
 
   // Toggle active tab state
   const toggleTabCheckbox = (tabId: string) => {
+    if (!user?._id) return;
     const nextActive = activeTabs.includes(tabId)
       ? activeTabs.filter(id => id !== tabId)
       : [...activeTabs, tabId];
       
-    localStorage.setItem("faculty_active_tabs", JSON.stringify(nextActive));
+    localStorage.setItem(`faculty_${user._id}_active_tabs`, JSON.stringify(nextActive));
     setActiveTabs(nextActive);
     
     if (user?._id) {
@@ -297,8 +312,10 @@ export default function FacultyDashboard() {
     const nextList = [...tabsList, newTabConfig];
     const nextActive = [...activeTabs, newId];
 
-    localStorage.setItem("faculty_tabs_config", JSON.stringify(nextList));
-    localStorage.setItem("faculty_active_tabs", JSON.stringify(nextActive));
+    if (user?._id) {
+      localStorage.setItem(`faculty_${user._id}_tabs_config`, JSON.stringify(nextList));
+      localStorage.setItem(`faculty_${user._id}_active_tabs`, JSON.stringify(nextActive));
+    }
 
     setTabsList(nextList);
     setActiveTabs(nextActive);
@@ -306,7 +323,9 @@ export default function FacultyDashboard() {
 
     // Init custom tab record rows
     const nextData = { ...customTabsData, [newId]: [] };
-    localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
+    if (user?._id) {
+      localStorage.setItem(`faculty_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
+    }
     setCustomTabsData(nextData);
 
     if (user?._id) {
@@ -335,7 +354,9 @@ export default function FacultyDashboard() {
     const nextRows = [...currentTabRows, newEntry];
     const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-    localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
+    if (user?._id) {
+      localStorage.setItem(`faculty_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
+    }
     setCustomTabsData(nextData);
 
     if (user?._id) {
@@ -361,13 +382,14 @@ export default function FacultyDashboard() {
 
   // Perform actual deletion of tab or row from custom state confirmation
   const executeDelete = () => {
+    if (!user?._id) return;
     if (deleteConfirmType === "tab") {
       const tabId = deleteTargetId;
       const nextList = tabsList.filter(t => t.id !== tabId);
       const nextActive = activeTabs.filter(id => id !== tabId);
 
-      localStorage.setItem("faculty_tabs_config", JSON.stringify(nextList));
-      localStorage.setItem("faculty_active_tabs", JSON.stringify(nextActive));
+      localStorage.setItem(`faculty_${user._id}_tabs_config`, JSON.stringify(nextList));
+      localStorage.setItem(`faculty_${user._id}_active_tabs`, JSON.stringify(nextActive));
       
       setTabsList(nextList);
       setActiveTabs(nextActive);
@@ -378,7 +400,7 @@ export default function FacultyDashboard() {
 
       const nextData = { ...customTabsData };
       delete nextData[tabId];
-      localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
+      localStorage.setItem(`faculty_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
       setCustomTabsData(nextData);
 
       if (user?._id) {
@@ -400,7 +422,7 @@ export default function FacultyDashboard() {
       const nextRows = currentTabRows.filter((_, idx) => idx !== rowIdx);
       const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-      localStorage.setItem("faculty_custom_tabs_data", JSON.stringify(nextData));
+      localStorage.setItem(`faculty_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
       setCustomTabsData(nextData);
 
       if (user?._id) {
@@ -492,6 +514,14 @@ export default function FacultyDashboard() {
               <div>
                 <span className="font-semibold text-slate-500">Supervision Center : </span>
                 <span className="font-bold text-slate-800">{profileCenter}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500">Specialization : </span>
+                <span className="font-bold text-slate-800">{profileSpecialization || "Not Set"}</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500">Total Experience : </span>
+                <span className="font-bold text-slate-800">{profileExperience ? `${profileExperience} Years` : "Not Set"}</span>
               </div>
             </div>
           </div>
@@ -714,6 +744,29 @@ export default function FacultyDashboard() {
                   onChange={(e) => setProfileCenter(e.target.value)}
                   className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Specialization</label>
+                  <input
+                    type="text"
+                    value={profileSpecialization}
+                    onChange={(e) => setProfileSpecialization(e.target.value)}
+                    placeholder="e.g. Machine Learning"
+                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Experience (Years)</label>
+                  <input
+                    type="text"
+                    value={profileExperience}
+                    onChange={(e) => setProfileExperience(e.target.value)}
+                    placeholder="e.g. 10"
+                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
+                  />
+                </div>
               </div>
 
               <div>

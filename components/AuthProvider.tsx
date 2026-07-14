@@ -49,24 +49,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (typeof window === "undefined") return;
 
     const role = resolvedUser.role || resolvedUser.roles?.[0] || "scholar";
+    const userIdKey = resolvedUser._id;
 
-    // Restore extended profile fields
-    if (resolvedUser.name) localStorage.setItem(`${role}_profile_name`, resolvedUser.name);
-    if (resolvedUser.email) localStorage.setItem(`${role}_profile_email`, resolvedUser.email);
-    if (resolvedUser.department) localStorage.setItem(`${role}_profile_dept`, resolvedUser.department);
-    
-    if (resolvedUser.designation) localStorage.setItem(`${role}_profile_designation`, resolvedUser.designation);
-    if (resolvedUser.uniqueId) localStorage.setItem(`${role}_profile_unique_id`, resolvedUser.uniqueId);
-    if (resolvedUser.avatar) localStorage.setItem(`${role}_profile_avatar`, resolvedUser.avatar);
-    if (resolvedUser.academicYear) {
-      localStorage.setItem(`${role}_profile_academic_year`, resolvedUser.academicYear);
-    }
+    if (userIdKey) {
+      // Restore extended profile fields
+      if (resolvedUser.name) localStorage.setItem(`${role}_${userIdKey}_profile_name`, resolvedUser.name);
+      if (resolvedUser.email) localStorage.setItem(`${role}_${userIdKey}_profile_email`, resolvedUser.email);
+      if (resolvedUser.department) localStorage.setItem(`${role}_${userIdKey}_profile_dept`, resolvedUser.department);
+      
+      if (resolvedUser.designation) localStorage.setItem(`${role}_${userIdKey}_profile_designation`, resolvedUser.designation);
+      if (resolvedUser.uniqueId) localStorage.setItem(`${role}_${userIdKey}_profile_unique_id`, resolvedUser.uniqueId);
+      if (resolvedUser.avatar) localStorage.setItem(`${role}_${userIdKey}_profile_avatar`, resolvedUser.avatar);
+      if (resolvedUser.academicYear) {
+        localStorage.setItem(`${role}_${userIdKey}_profile_academic_year`, resolvedUser.academicYear);
+      }
 
-    // Restore preferences
-    if (resolvedUser.preferences) {
-      Object.entries(resolvedUser.preferences).forEach(([key, val]) => {
-        localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val));
-      });
+      // Restore preferences
+      if (resolvedUser.preferences) {
+        Object.entries(resolvedUser.preferences).forEach(([key, val]) => {
+          let finalKey = key;
+          if (key.startsWith(`${role}_`)) {
+            const suffix = key.slice(role.length + 1);
+            if (!suffix.startsWith(`${userIdKey}_`)) {
+              finalKey = `${role}_${userIdKey}_${suffix}`;
+            }
+          }
+          localStorage.setItem(finalKey, typeof val === "string" ? val : JSON.stringify(val));
+        });
+      }
+    } else {
+      // Fallback
+      if (resolvedUser.name) localStorage.setItem(`${role}_profile_name`, resolvedUser.name);
+      if (resolvedUser.email) localStorage.setItem(`${role}_profile_email`, resolvedUser.email);
+      if (resolvedUser.department) localStorage.setItem(`${role}_profile_dept`, resolvedUser.department);
+      
+      if (resolvedUser.designation) localStorage.setItem(`${role}_profile_designation`, resolvedUser.designation);
+      if (resolvedUser.uniqueId) localStorage.setItem(`${role}_profile_unique_id`, resolvedUser.uniqueId);
+      if (resolvedUser.avatar) localStorage.setItem(`${role}_profile_avatar`, resolvedUser.avatar);
+      if (resolvedUser.academicYear) {
+        localStorage.setItem(`${role}_profile_academic_year`, resolvedUser.academicYear);
+      }
+
+      // Restore preferences
+      if (resolvedUser.preferences) {
+        Object.entries(resolvedUser.preferences).forEach(([key, val]) => {
+          localStorage.setItem(key, typeof val === "string" ? val : JSON.stringify(val));
+        });
+      }
     }
   };
 
@@ -75,6 +104,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const initAuth = async () => {
       try {
         if (isMounted) setLoading(true);
+
+        // Pre-check: If no token exists in cookies or localStorage, user is definitely not logged in.
+        // We can skip the API call entirely to prevent unnecessary 401 console logs and network traffic.
+        let token = typeof window !== "undefined" ? Cookies.get("token") : undefined;
+        if (!token && typeof window !== "undefined") {
+          token = localStorage.getItem("token") || undefined;
+        }
+
+        if (!token) {
+          if (isMounted) {
+            setUser(null);
+            setLoading(false);
+          }
+          const isProtected = ["/admin", "/coordinator", "/faculty", "/research-guide", "/scholar", "/library"].some(
+            (prefix) => pathname.startsWith(prefix)
+          );
+          if (isProtected) {
+            router.push("/");
+          }
+          return;
+        }
         
         // Fetch current user from backend auth/me
         const res = await apiGet<{ item?: User; user?: User }>("/auth/me");
@@ -152,7 +202,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        console.error("Auto-auth resolution failed (auth error):", error);
+        // Suppress expected guest/expired 401 errors from creating scary red console error logs
+        if (error?.message !== "Authentication required" && error?.message !== "Invalid or expired token") {
+          console.error("Auto-auth resolution failed (auth error):", error);
+        }
+
         if (isMounted) setUser(null);
         Cookies.remove("token");
         if (typeof window !== "undefined") {

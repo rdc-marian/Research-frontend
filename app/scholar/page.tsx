@@ -115,18 +115,19 @@ export default function ScholarDashboard() {
   // Initialize Scholar profile custom items and tabs configuration from LocalStorage/user object
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (!user?._id) return;
+
+    const userIdKey = user._id;
 
     // Load Unique ID
-    const savedId = user?.uniqueId || localStorage.getItem("scholar_profile_unique_id");
+    const savedId = user?.uniqueId || localStorage.getItem(`scholar_${userIdKey}_profile_unique_id`);
     if (savedId) {
       setUniqueId(savedId);
-      localStorage.setItem("scholar_profile_unique_id", savedId);
-    } else if (user?._id) {
+      localStorage.setItem(`scholar_${userIdKey}_profile_unique_id`, savedId);
+    } else {
       const generatedId = `MCKA-SCH-${user._id.slice(-4).toUpperCase()}`;
       setUniqueId(generatedId);
-      localStorage.setItem("scholar_profile_unique_id", generatedId);
-    } else {
-      setUniqueId("");
+      localStorage.setItem(`scholar_${userIdKey}_profile_unique_id`, generatedId);
     }
 
     // Load tabs config
@@ -134,14 +135,14 @@ export default function ScholarDashboard() {
     const prefActive = user?.preferences?.scholar_active_tabs;
     const prefData = user?.preferences?.scholar_custom_tabs_data;
 
-    const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem("scholar_custom_tabs_list");
-    const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem("scholar_active_tabs");
-    const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem("scholar_custom_tabs_data");
+    const savedTabs = prefTabs ? JSON.stringify(prefTabs) : localStorage.getItem(`scholar_${userIdKey}_custom_tabs_list`);
+    const savedActive = prefActive ? JSON.stringify(prefActive) : localStorage.getItem(`scholar_${userIdKey}_active_tabs`);
+    const savedData = prefData ? JSON.stringify(prefData) : localStorage.getItem(`scholar_${userIdKey}_custom_tabs_data`);
 
     if (savedTabs) {
       setTabsList(JSON.parse(savedTabs));
     } else {
-      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(DEFAULT_SCHOLAR_TABS));
+      localStorage.setItem(`scholar_${userIdKey}_custom_tabs_list`, JSON.stringify(DEFAULT_SCHOLAR_TABS));
       setTabsList(DEFAULT_SCHOLAR_TABS);
     }
 
@@ -151,7 +152,7 @@ export default function ScholarDashboard() {
       if (parsedActive.length > 0) setSelectedTab(parsedActive[0]);
     } else {
       const defaultActive: string[] = [];
-      localStorage.setItem("scholar_active_tabs", JSON.stringify(defaultActive));
+      localStorage.setItem(`scholar_${userIdKey}_active_tabs`, JSON.stringify(defaultActive));
       setActiveTabs(defaultActive);
       setSelectedTab("");
     }
@@ -159,7 +160,7 @@ export default function ScholarDashboard() {
     if (savedData) {
       setCustomTabsData(JSON.parse(savedData));
     } else {
-      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(DEFAULT_SCHOLAR_TABS_DATA));
+      localStorage.setItem(`scholar_${userIdKey}_custom_tabs_data`, JSON.stringify(DEFAULT_SCHOLAR_TABS_DATA));
       setCustomTabsData(DEFAULT_SCHOLAR_TABS_DATA);
     }
   }, [user]);
@@ -219,7 +220,7 @@ export default function ScholarDashboard() {
       setProfileDept(user.department || "");
       setProfileGuide(user.guide?.name || "");
       
-      const savedId = localStorage.getItem("scholar_profile_unique_id");
+      const savedId = localStorage.getItem(`scholar_${user._id}_profile_unique_id`);
       setProfileUniqueId(savedId || (user._id ? `MCKA-SCH-${user._id.slice(-4).toUpperCase()}` : ""));
     }
   }, [user, showEditProfileModal]);
@@ -228,7 +229,7 @@ export default function ScholarDashboard() {
   const handleSaveProfile = async () => {
     if (!user?._id) return;
     try {
-      localStorage.setItem("scholar_profile_unique_id", profileUniqueId);
+      localStorage.setItem(`scholar_${user._id}_profile_unique_id`, profileUniqueId);
 
       // Save changes to local database via API
       const res: any = await apiPatchJson("/users/" + user._id, {
@@ -252,11 +253,12 @@ export default function ScholarDashboard() {
 
   // Toggle active tab checkbox configuration
   const toggleTabCheckbox = (tabId: string) => {
+    if (!user?._id) return;
     const nextActive = activeTabs.includes(tabId)
       ? activeTabs.filter(id => id !== tabId)
       : [...activeTabs, tabId];
       
-    localStorage.setItem("scholar_active_tabs", JSON.stringify(nextActive));
+    localStorage.setItem(`scholar_${user._id}_active_tabs`, JSON.stringify(nextActive));
     setActiveTabs(nextActive);
     syncPreferences({ scholar_active_tabs: nextActive });
 
@@ -301,8 +303,10 @@ export default function ScholarDashboard() {
     const nextList = [...tabsList, newTabConfig];
     const nextActive = [...activeTabs, newId];
 
-    localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(nextList));
-    localStorage.setItem("scholar_active_tabs", JSON.stringify(nextActive));
+    if (user?._id) {
+      localStorage.setItem(`scholar_${user._id}_custom_tabs_list`, JSON.stringify(nextList));
+      localStorage.setItem(`scholar_${user._id}_active_tabs`, JSON.stringify(nextActive));
+    }
 
     setTabsList(nextList);
     setActiveTabs(nextActive);
@@ -310,7 +314,9 @@ export default function ScholarDashboard() {
 
     // Initialize custom tab record rows
     const nextData = { ...customTabsData, [newId]: [] };
-    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+    if (user?._id) {
+      localStorage.setItem(`scholar_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
+    }
     setCustomTabsData(nextData);
 
     syncPreferences({
@@ -333,7 +339,9 @@ export default function ScholarDashboard() {
     const nextRows = [...currentTabRows, newEntry];
     const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-    localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+    if (user?._id) {
+      localStorage.setItem(`scholar_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
+    }
     setCustomTabsData(nextData);
     syncPreferences({ scholar_custom_tabs_data: nextData });
 
@@ -350,13 +358,14 @@ export default function ScholarDashboard() {
 
   // Perform actual deletion of tab or row from custom state confirmation
   const executeDelete = () => {
+    if (!user?._id) return;
     if (deleteConfirmType === "tab") {
       const tabId = deleteTargetId;
       const nextList = tabsList.filter(t => t.id !== tabId);
       const nextActive = activeTabs.filter(id => id !== tabId);
 
-      localStorage.setItem("scholar_custom_tabs_list", JSON.stringify(nextList));
-      localStorage.setItem("scholar_active_tabs", JSON.stringify(nextActive));
+      localStorage.setItem(`scholar_${user._id}_custom_tabs_list`, JSON.stringify(nextList));
+      localStorage.setItem(`scholar_${user._id}_active_tabs`, JSON.stringify(nextActive));
       
       setTabsList(nextList);
       setActiveTabs(nextActive);
@@ -367,7 +376,7 @@ export default function ScholarDashboard() {
 
       const nextData = { ...customTabsData };
       delete nextData[tabId];
-      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+      localStorage.setItem(`scholar_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
       setCustomTabsData(nextData);
 
       syncPreferences({
@@ -383,7 +392,7 @@ export default function ScholarDashboard() {
       const nextRows = currentTabRows.filter((_, idx) => idx !== rowIdx);
       const nextData = { ...customTabsData, [selectedTab]: nextRows };
 
-      localStorage.setItem("scholar_custom_tabs_data", JSON.stringify(nextData));
+      localStorage.setItem(`scholar_${user._id}_custom_tabs_data`, JSON.stringify(nextData));
       setCustomTabsData(nextData);
       syncPreferences({ scholar_custom_tabs_data: nextData });
     }
