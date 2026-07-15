@@ -16,8 +16,8 @@ const displayFont = Libre_Baskerville({
 });
 
 export const metadata: Metadata = {
-  title: "Research Management System",
-  description: "Research Management System frontend prototype",
+  title: "MarianResearch",
+  description: "MarianResearch to Manage Research activities",
 };
 
 export default function RootLayout({
