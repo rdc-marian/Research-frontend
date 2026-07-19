@@ -13,7 +13,7 @@ type Scholar = {
   _id: string;
   name: string;
   email: string;
-  department: string;
+  researchCenter?: { _id: string; name: string } | null;
   guide?: {
     name: string;
     email: string;
@@ -48,8 +48,9 @@ export default function CoordinatorScholarPortfoliosPage() {
     try {
       setLoading(true);
       setError(null);
-      // Fetch scholars in coordinator's department
-      const path = user.role === "admin" ? "/users?role=scholar" : `/users?role=scholar&department=${user.department || ""}`;
+      // Fetch scholars in coordinator's research center
+      const centerId = user.researchCenter?._id || (typeof user.researchCenter === "string" ? user.researchCenter : "");
+      const path = user.role === "admin" ? "/users?role=scholar" : `/research-centers/${centerId}/scholars`;
       const res = await apiGet<ApiListResponse<Scholar>>(path);
       setScholars(res.items);
     } catch (err) {
@@ -94,7 +95,7 @@ export default function CoordinatorScholarPortfoliosPage() {
           </div>
           <div>
             <p className="font-semibold text-slate-800">{scholar.name}</p>
-            <p className="text-[10px] text-slate-400">{scholar.department}</p>
+            <p className="text-[10px] text-slate-400">{scholar.researchCenter?.name || "N/A"}</p>
           </div>
         </div>
       ),
@@ -138,7 +139,7 @@ export default function CoordinatorScholarPortfoliosPage() {
           <p className="text-sm text-slate-500 mt-1">
             {user?.role === "admin"
               ? "View and inspect research portfolios for all scholars in the institution."
-              : `View and inspect research portfolios for scholars in the ${user?.department || "MCA"} Research Center.`}
+              : `View and inspect research portfolios for scholars in the ${user?.researchCenter?.name || "MCA"} Research Center.`}
           </p>
         </div>
 
@@ -160,7 +161,7 @@ export default function CoordinatorScholarPortfoliosPage() {
                     {selectedScholar.name} - Research Portfolio
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Research Center: {selectedScholar.department} | Guide: {selectedScholar.guide?.name || "Unassigned"}
+                    Research Center: {selectedScholar.researchCenter?.name || "N/A"} | Guide: {selectedScholar.guide?.name || "Unassigned"}
                   </p>
                 </div>
                 <button

@@ -12,14 +12,18 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   submittedAt?: string;
   status: string;
+  scholar?: {
+    researchCenter?: {
+      name?: string;
+    };
+  };
 };
 
 const columns = [
   { key: "title", label: "Title" },
-  { key: "department", label: "Department" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "submitted", label: "Submitted On" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
@@ -78,7 +82,7 @@ export default function ScholarApprovalsPage() {
       approvals.map((submission) => ({
         id: submission._id,
         title: submission.title,
-        department: submission.department,
+        researchCenter: submission.scholar?.researchCenter?.name || "N/A",
         submitted: formatDate(submission.submittedAt),
         status: <StatusBadge status={submission.status} />,
         action: (

@@ -11,7 +11,6 @@ export interface User {
   email: string;
   role: string;
   roles: string[];
-  department?: string;
   researchCenter?: any;
   guide?: any;
   status?: string;

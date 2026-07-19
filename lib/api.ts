@@ -133,7 +133,6 @@ export const saveUserProfileData = async (
   data: {
     name?: string;
     email?: string;
-    department?: string;
     designation?: string;
     uniqueId?: string;
     avatar?: string;

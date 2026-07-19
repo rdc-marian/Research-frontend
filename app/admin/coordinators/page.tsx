@@ -13,14 +13,14 @@ type Coordinator = {
   _id: string;
   name?: string;
   email?: string;
-  department?: string;
+  researchCenter?: { name?: string } | null;
   status?: string;
 };
 
 const columns = [
   { key: "name", label: "Coordinator" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Research Center" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
 ];
@@ -65,7 +65,7 @@ export default function AdminCoordinatorsPage() {
         id: person._id,
         name: person.name ?? "Unknown",
         email: person.email ?? "N/A",
-        department: person.department ?? "N/A",
+        researchCenter: person.researchCenter?.name ?? "N/A",
         status: <StatusBadge status={person.status ?? "Active"} />,
         action: (
           <button

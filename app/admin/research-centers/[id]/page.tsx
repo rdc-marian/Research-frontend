@@ -20,7 +20,6 @@ type ResearchCenter = {
   _id: string;
   name: string;
   code: string;
-  department: string;
   description?: string;
   officeLocation?: string;
   contactEmail?: string;
@@ -37,7 +36,6 @@ type User = {
   roles?: string[];
   permissions?: string[];
   status?: string;
-  department?: string;
   researchCenter?: { _id: string; name: string } | string | null;
   guide?: { _id?: string; name?: string } | null;
 };
@@ -56,13 +54,11 @@ const inputClass =
 const facultyColumns = [
   { key: "name", label: "Faculty Member" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Department" },
 ];
 
 const guideColumns = [
   { key: "name", label: "Research Guide" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Department" },
 ];
 
 const scholarColumns = [
@@ -242,7 +238,6 @@ export default function AdminResearchCenterDetailsPage() {
       setSaveMessage(null);
       await apiPatchJson(`/users/${formState.facultyId}`, {
         researchCenterId: centerId,
-        department: center.department
       });
       await loadData();
       setSaveMessage("Faculty assigned to center successfully.");
@@ -312,7 +307,6 @@ export default function AdminResearchCenterDetailsPage() {
         id: f._id,
         name: f.name,
         email: f.email,
-        department: f.department || "N/A",
       })),
     [faculty]
   );
@@ -323,7 +317,6 @@ export default function AdminResearchCenterDetailsPage() {
         id: g._id,
         name: g.name,
         email: g.email,
-        department: g.department || "N/A",
       })),
     [guides]
   );
@@ -401,10 +394,7 @@ export default function AdminResearchCenterDetailsPage() {
                   <User className="h-4 w-4 text-[color:var(--maroon-700)]" />
                   <span>Coordinator: <strong className="text-slate-800">{center.coordinator?.name || "Unassigned"}</strong></span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <FileText className="h-4 w-4 text-[color:var(--maroon-700)]" />
-                  <span>Department: <strong className="text-slate-800">{center.department}</strong></span>
-                </div>
+
                 <div className="flex items-center gap-2 text-sm text-slate-600">
                   <Info className="h-4 w-4 text-[color:var(--maroon-700)]" />
                   <span>Status: 

@@ -172,7 +172,11 @@ function ScholarPortfolioFormContent() {
         appendFields(["degree", "subject", "institution", "university", "yearOfPassing", "percentage", "status"]);
       } else if (category === "publications") {
         appendFields(["title", "authors", "journalName", "volume", "issue", "pages", "issnIsbn", "publishDate", "impactFactor", "publicationUrl"]);
-        payload.append("indexing", JSON.stringify(formState.indexing));
+        if (Array.isArray(formState.indexing)) {
+          formState.indexing.forEach((val) => {
+            payload.append("indexing", val);
+          });
+        }
       } else if (category === "conferences") {
         appendFields(["title", "paperTitle", "presentationType", "organizer", "venue", "startDate", "endDate", "proceedingsDetails"]);
       } else if (category === "patents") {
@@ -530,7 +534,7 @@ function ScholarPortfolioFormContent() {
                     <label className={labelClass} htmlFor="organizer">Organizer</label>
                     <input
                       id="organizer"
-                      placeholder="e.g. Department of MCA"
+                      placeholder="e.g. MCA Research Center"
                       className={inputClass}
                       value={formState.organizer}
                       onChange={(e) => handleChange("organizer", e.target.value)}

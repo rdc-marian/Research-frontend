@@ -13,7 +13,6 @@ type ResearchCenter = {
   _id: string;
   name: string;
   code: string;
-  department: string;
   description?: string;
   officeLocation?: string;
   contactEmail?: string;
@@ -29,13 +28,7 @@ type User = {
   role?: string;
   roles?: string[];
   permissions?: string[];
-  department?: string;
   researchCenter?: { _id: string; name: string } | string | null;
-};
-
-type DepartmentOption = {
-  _id: string;
-  name: string;
 };
 
 const inputClass =
@@ -45,7 +38,6 @@ export default function AdminResearchCentersPage() {
   const { user } = useAuth();
   const [centers, setCenters] = useState<ResearchCenter[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -58,7 +50,6 @@ export default function AdminResearchCentersPage() {
   const [formState, setFormState] = useState({
     name: "",
     code: "",
-    department: "",
     description: "",
     officeLocation: "",
     contactEmail: "",
@@ -70,7 +61,6 @@ export default function AdminResearchCentersPage() {
   const [editFormState, setEditFormState] = useState({
     name: "",
     code: "",
-    department: "",
     description: "",
     officeLocation: "",
     contactEmail: "",
@@ -83,15 +73,13 @@ export default function AdminResearchCentersPage() {
     setLoading(true);
     setError(null);
     try {
-      const [centersRes, usersRes, deptsRes] = await Promise.all([
+      const [centersRes, usersRes] = await Promise.all([
         apiGet<ApiListResponse<ResearchCenter>>("/research-centers"),
         apiGet<ApiListResponse<User>>("/users"),
-        apiGet<ApiListResponse<DepartmentOption>>("/departments"),
       ]);
 
       setCenters(centersRes.items);
       setAllUsers(usersRes.items);
-      setDepartments(deptsRes.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -138,7 +126,6 @@ export default function AdminResearchCentersPage() {
       await apiPostJson("/research-centers", {
         name: formState.name.trim(),
         code: derivedCode,
-        department: formState.name.trim(),
         description: "",
         officeLocation: "",
         contactEmail: undefined,
@@ -151,7 +138,6 @@ export default function AdminResearchCentersPage() {
       setFormState({
         name: "",
         code: "",
-        department: "",
         description: "",
         officeLocation: "",
         contactEmail: "",
@@ -173,7 +159,6 @@ export default function AdminResearchCentersPage() {
     setEditFormState({
       name: center.name,
       code: center.code,
-      department: center.department,
       description: center.description || "",
       officeLocation: center.officeLocation || "",
       contactEmail: center.contactEmail || "",
@@ -201,7 +186,6 @@ export default function AdminResearchCentersPage() {
       await apiPatchJson(`/research-centers/${editingCenter._id}`, {
         name: editFormState.name.trim(),
         code: editingCenter.code,
-        department: editFormState.name.trim(),
         description: "",
         officeLocation: "",
         contactEmail: undefined,
@@ -360,7 +344,6 @@ export default function AdminResearchCentersPage() {
               setFormState({
                 name: "",
                 code: "",
-                department: "",
                 description: "",
                 officeLocation: "",
                 contactEmail: "",

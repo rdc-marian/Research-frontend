@@ -25,7 +25,6 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   submittedAt?: string;
   status: string;
   scholar?: { _id?: string; name?: string; guide?: any };
@@ -37,7 +36,7 @@ type UserType = {
   email: string;
   role: string;
   roles: string[];
-  department?: string;
+  researchCenter?: { _id: string; name: string } | string | null;
   permissions?: string[];
 };
 
@@ -129,11 +128,11 @@ export default function FacultyDashboard() {
         }
 
         if (isCoordinator) {
-          const deptFilter = user.department || "";
+          const centerId = user.researchCenter?._id || (typeof user.researchCenter === "string" ? user.researchCenter : "");
           promises.push(
-            apiGet<ApiListResponse<any>>(`/submissions?department=${deptFilter}`),
-            apiGet<ApiListResponse<any>>(`/leaves?department=${deptFilter}`),
-            apiGet<ApiListResponse<any>>("/departments")
+            apiGet<ApiListResponse<any>>(`/submissions?researchCenterId=${centerId}`),
+            apiGet<ApiListResponse<any>>(`/leaves?researchCenterId=${centerId}`),
+            apiGet<ApiListResponse<any>>("/research-centers")
           );
         } else {
           promises.push(Promise.resolve(null), Promise.resolve(null), Promise.resolve(null));
@@ -145,7 +144,7 @@ export default function FacultyDashboard() {
           pendingLeavesRes,
           coordinatorSubmissionsRes,
           coordinatorLeavesRes,
-          departmentsRes
+          researchCentersRes
         ] = await Promise.all(promises);
 
         if (!isMounted) return;
@@ -164,13 +163,14 @@ export default function FacultyDashboard() {
         }
 
         if (isCoordinator && coordinatorSubmissionsRes) {
-          const firstDept = departmentsRes?.items.find((d: any) => d.name === user.department || d.coordinator?._id === user._id) || departmentsRes?.items[0] || null;
+          const centerId = user.researchCenter?._id || (typeof user.researchCenter === "string" ? user.researchCenter : "");
+          const firstCenter = researchCentersRes?.items.find((d: any) => d._id === centerId || d.coordinator?._id === user._id) || researchCentersRes?.items[0] || null;
           const pendingCoordLeaves = coordinatorLeavesRes ? coordinatorLeavesRes.items.filter((l: any) => l.status === "ApprovedByGuide").length : 0;
 
           setCoordinatorMetrics([
             { label: "Research Center Submissions", value: `${coordinatorSubmissionsRes.items.length}`, icon: FileText },
             { label: "Pending Center Leaves", value: `${pendingCoordLeaves}`, icon: Calendar },
-            { label: "Research Center", value: firstDept?.name || user.department || "MCA", icon: NotebookText },
+            { label: "Research Center", value: firstCenter?.name || user.researchCenter?.name || "MCA", icon: NotebookText },
           ]);
         }
       } catch (err) {
@@ -241,7 +241,7 @@ export default function FacultyDashboard() {
       setProfileDesignation(user?.designation || "");
       setProfileUniqueId(user?.uniqueId || `MCKA-FAC-${user._id.slice(-4).toUpperCase()}`);
       setProfileEmail(user?.email || "");
-      setProfileDept(user?.department || "");
+      setProfileDept(user?.researchCenter?.name || (typeof user?.researchCenter === "string" ? user?.researchCenter : ""));
       setProfileAvatar(user?.avatar || "");
       setProfileSpecialization(user?.preferences?.faculty_profile_specialization || "");
       setProfileExperience(user?.preferences?.faculty_profile_experience || "");
@@ -293,7 +293,6 @@ export default function FacultyDashboard() {
       const updatedUser = await apiPatchJson<UserType>(`/users/${user._id}`, {
         name: profileName,
         email: profileEmail,
-        department: profileDept,
         designation: profileDesignation,
         uniqueId: profileUniqueId,
         avatar: transformGoogleDriveLink(profileAvatar),
@@ -786,8 +785,9 @@ export default function FacultyDashboard() {
                   <input
                     type="text"
                     value={profileDept}
-                    onChange={(e) => setProfileDept(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
+                    readOnly
+                    disabled
+                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed focus:outline-none"
                   />
                 </div>
               </div>

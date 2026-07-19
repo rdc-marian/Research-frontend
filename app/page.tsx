@@ -36,10 +36,11 @@ export default function Home() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginRole, setLoginRole] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
   
   // Modal mode: "login" or "register"
   const [modalMode, setModalMode] = useState<"login" | "register">("login");
-  const [availableDepartments, setAvailableDepartments] = useState<{ _id: string; name: string; department?: string }[]>([]);
+  const [availableDepartments, setAvailableDepartments] = useState<{ _id: string; name: string }[]>([]);
 
   // Registration form states
   const [regName, setRegName] = useState("");
@@ -50,6 +51,7 @@ export default function Home() {
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
+  const [regError, setRegError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
@@ -75,7 +77,7 @@ export default function Home() {
         setLoading(true);
         const [res, deptRes] = await Promise.all([
           apiGet<ApiListResponse<User>>("/research-guides"),
-          apiGet<ApiListResponse<{ _id: string; name: string; department?: string; status?: string }>>("/research-centers")
+          apiGet<ApiListResponse<{ _id: string; name: string; status?: string }>>("/research-centers")
         ]);
         setUsers(res.items || []);
         const activeCenters = (deptRes.items || []).filter(c => c.status === "Active" || !c.status);
@@ -94,6 +96,8 @@ export default function Home() {
     setShowLoginModal(false);
     setModalMode("login");
     setRegSuccess(false);
+    setLoginError(null);
+    setRegError(null);
     setEmail("");
     setPassword("");
     setLoginRole("");
@@ -108,20 +112,21 @@ export default function Home() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setRegError(null);
     if (!regName.trim() || !regEmail.trim() || !regRole || !regPassword || !regConfirmPassword) {
-      alert("Please fill in all fields.");
+      setRegError("Please fill in all fields.");
       return;
     }
     if (regRole === "scholar" && !regGuideId) {
-      alert("Please select a research guide.");
+      setRegError("Please select a research guide.");
       return;
     }
     if (regRole !== "scholar" && !regDept) {
-      alert("Please select a research center.");
+      setRegError("Please select a research center.");
       return;
     }
     if (regPassword !== regConfirmPassword) {
-      alert("Passwords do not match.");
+      setRegError("Passwords do not match.");
       return;
     }
 
@@ -130,20 +135,17 @@ export default function Home() {
 
       let guideId: string | undefined = undefined;
       let researchCenterId: string | undefined = undefined;
-      let department: string | undefined = regDept;
 
       if (regRole === "scholar") {
         guideId = regGuideId;
         const selectedGuide = users.find(u => u._id === regGuideId);
         if (selectedGuide) {
           researchCenterId = selectedGuide.researchCenter?._id || selectedGuide.researchCenter;
-          department = selectedGuide.department;
         }
       } else {
         const selectedCenter = availableDepartments.find(c => c.name === regDept);
         if (selectedCenter) {
           researchCenterId = selectedCenter._id;
-          department = selectedCenter.department;
         }
       }
 
@@ -152,7 +154,6 @@ export default function Home() {
         email: regEmail.trim(),
         role: regRole,
         roles: [regRole],
-        department: department,
         researchCenterId: researchCenterId,
         guideId: guideId,
         password: regPassword,
@@ -162,7 +163,7 @@ export default function Home() {
       setRegSuccess(true);
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Failed to submit request. Please try again.");
+      setRegError(err.message || "Failed to submit request. Please try again.");
     } finally {
       setSubmittingReg(false);
     }
@@ -171,9 +172,10 @@ export default function Home() {
   // Handle Login action
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
     
     if (!email || !password || !loginRole) {
-      alert("Please enter email, password, and select a role.");
+      setLoginError("Please enter email, password, and select a role.");
       return;
     }
 
@@ -188,20 +190,20 @@ export default function Home() {
         if (res.user.status === "PendingApproval") {
           const isScholar = res.user.role === "scholar" || res.user.roles?.includes("scholar");
           if (isScholar) {
-            alert("Your account is pending approval from your selected Research Guide.");
+            setLoginError("Your account is pending approval from your selected Research Guide.");
           } else {
-            alert("Your account is pending administrator approval.");
+            setLoginError("Your account is pending administrator approval.");
           }
           return;
         }
         login(res.token, res.user);
         setShowLoginModal(false);
       } else {
-        alert("Login failed. Please check your credentials.");
+        setLoginError("Login failed. Please check your credentials.");
       }
     } catch (err: any) {
       console.error("Login error:", err);
-      alert(err.message || "Invalid credentials");
+      setLoginError(err.message || "Invalid credentials");
     }
   };
 
@@ -372,6 +374,11 @@ export default function Home() {
               </div>
             ) : modalMode === "login" ? (
               <form onSubmit={handleLoginSubmit} className="space-y-4">
+                {loginError && (
+                  <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-xs text-rose-600 text-center font-medium animate-in fade-in duration-200">
+                    {loginError}
+                  </div>
+                )}
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Email Address</label>
                   <div className="relative">
@@ -459,6 +466,11 @@ export default function Home() {
               </form>
             ) : (
               <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                {regError && (
+                  <div className="rounded-xl bg-rose-50 border border-rose-100 p-3 text-xs text-rose-600 text-center font-medium animate-in fade-in duration-200">
+                    {regError}
+                  </div>
+                )}
                 <div>
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Full Name</label>
                   <div className="relative">
@@ -522,7 +534,7 @@ export default function Home() {
                           .filter((u) => u.permissions?.includes("research_guide"))
                           .map((guide) => (
                             <option key={guide._id} value={guide._id}>
-                              {guide.name} ({guide.department || "No Department"})
+                              {guide.name} ({guide.researchCenter?.name || "No Center"})
                             </option>
                           ))}
                       </select>

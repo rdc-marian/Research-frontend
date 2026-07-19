@@ -14,10 +14,14 @@ type Submission = {
   _id: string;
   title: string;
   abstract: string;
-  department: string;
   submittedAt?: string;
   status: string;
-  scholar?: { name?: string } | null;
+  scholar?: {
+    name?: string;
+    researchCenter?: {
+      name?: string;
+    };
+  } | null;
   file?: { url?: string; originalName?: string } | null;
 };
 
@@ -86,7 +90,7 @@ function ScholarApprovalDetailsContent() {
               </div>
               <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4">
                 <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                  <span>Department: {submission.department}</span>
+                  <span>Research Center: {submission.scholar?.researchCenter?.name || "N/A"}</span>
                   <span>Submitted by: {submission.scholar?.name ?? "Unknown"}</span>
                   <StatusBadge status={submission.status} />
                 </div>

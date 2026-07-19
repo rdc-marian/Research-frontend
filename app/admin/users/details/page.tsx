@@ -17,7 +17,6 @@ type User = {
   role?: string;
   roles?: string[];
   permissions?: string[];
-  department?: string;
   status?: string;
   phone?: string;
   researchCenter?: { _id?: string; name?: string; code?: string } | string | null;
@@ -88,7 +87,6 @@ function AdminUserDetailsContent() {
   const [editForm, setEditForm] = useState({
     name: "",
     email: "",
-    department: "",
     researchCenterId: "",
     phone: "",
     status: "Active",
@@ -102,7 +100,6 @@ function AdminUserDetailsContent() {
       setEditForm({
         name: user.name || "",
         email: user.email || "",
-        department: user.department || "",
         researchCenterId: (user.researchCenter && typeof user.researchCenter === "object" ? (user.researchCenter as any)._id : user.researchCenter) || "",
         phone: user.phone || "",
         status: user.status || "Active",
@@ -127,15 +124,7 @@ function AdminUserDetailsContent() {
 
       if (isFacultyType) {
         payload.researchCenterId = editForm.researchCenterId || null;
-        const matched = researchCenters.find((c) => c._id === editForm.researchCenterId);
-        if (matched) {
-          payload.department = matched.department || matched.name;
-        } else {
-          payload.department = "";
-        }
         payload.permissions = editForm.permissions;
-      } else {
-        payload.department = editForm.department;
       }
 
       if (editForm.password) {
@@ -237,16 +226,7 @@ function AdminUserDetailsContent() {
                         </div>
                       </div>
                     </>
-                  ) : (
-                    <div>
-                      <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Department/Department Name</label>
-                      <input
-                        className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2"
-                        value={editForm.department}
-                        onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
-                      />
-                    </div>
-                  )}
+                  ) : null}
                   <div>
                     <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Phone</label>
                     <input className="mt-1 w-full rounded-xl border border-[color:var(--border)] px-3 py-2" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
@@ -287,9 +267,7 @@ function AdminUserDetailsContent() {
                     <p>
                       <span className="font-semibold">Roles:</span> {roles || "N/A"}
                     </p>
-                    <p>
-                      <span className="font-semibold">Department:</span> {user.department || "N/A"}
-                    </p>
+
                     <p>
                       <span className="font-semibold">Phone:</span> {user.phone || "N/A"}
                     </p>

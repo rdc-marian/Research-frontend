@@ -18,10 +18,9 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   status: string;
   submittedAt?: string;
-  scholar?: { name?: string };
+  scholar?: { name?: string; researchCenter?: { name?: string } };
 };
 
 type User = {
@@ -38,7 +37,7 @@ const defaultMetrics = [
 const submissionColumns = [
   { key: "title", label: "Title" },
   { key: "author", label: "Author" },
-  { key: "department", label: "Research Center" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "status", label: "Status", align: "right" as const },
 ];
 
@@ -124,7 +123,7 @@ export default function AdminDashboard() {
         id: item._id,
         title: item.title,
         author: item.scholar?.name ?? "Unknown",
-        department: item.department,
+        researchCenter: item.scholar?.researchCenter?.name || "N/A",
         status: <StatusBadge status={item.status} />,
         submitted: formatDate(item.submittedAt),
       })),

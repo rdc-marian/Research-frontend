@@ -17,7 +17,10 @@ type LeaveItem = {
     _id: string;
     name: string;
     email: string;
-    department?: string;
+    researchCenter?: {
+      _id: string;
+      name: string;
+    } | null;
   };
   startDate: string;
   endDate: string;
@@ -98,7 +101,7 @@ export default function AdminLeavesPage() {
 
   const columns = [
     { key: "scholar", label: "Scholar Name" },
-    { key: "department", label: "Research Center" },
+    { key: "researchCenter", label: "Research Center" },
     { key: "type", label: "Leave Type" },
     { key: "dates", label: "Duration" },
     { key: "days", label: "Days", align: "center" as const },
@@ -110,7 +113,7 @@ export default function AdminLeavesPage() {
     return leaves.map((item) => ({
       id: item._id,
       scholar: item.scholar?.name || "Unknown Scholar",
-      department: item.scholar?.department || "N/A",
+      researchCenter: item.scholar?.researchCenter?.name || "N/A",
       type: item.leaveType,
       dates: `${formatDate(item.startDate)} - ${formatDate(item.endDate)}`,
       days: item.totalDays,

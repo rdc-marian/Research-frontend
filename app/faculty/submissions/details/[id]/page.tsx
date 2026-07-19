@@ -19,11 +19,16 @@ type Submission = {
   _id: string;
   title: string;
   abstract: string;
-  department: string;
   submittedAt?: string;
   status: string;
-  scholar?: { name?: string } | null;
+  scholar?: {
+    name?: string;
+    researchCenter?: {
+      name?: string;
+    };
+  } | null;
   file?: SubmissionFile | null;
+  reviewNote?: string | null;
 };
 
 type UpdateSubmissionStatusResponse = ApiItemResponse<Submission>;
@@ -52,6 +57,8 @@ export default function FacultySubmissionDetailsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [showRejectForm, setShowRejectForm] = useState(false);
 
   useEffect(() => {
     if (!submissionId) return;
@@ -82,12 +89,12 @@ export default function FacultySubmissionDetailsPage() {
     };
   }, [submissionId]);
 
-  const handleChangeStatus = async (status: string) => {
+  const handleChangeStatus = async (status: string, note?: string) => {
     if (!submissionId) return;
-    const confirmText = status === "Rejected" ? "Reject this submission?" : undefined;
-    if (confirmText) {
-      const ok = window.confirm(confirmText);
-      if (!ok) return;
+
+    if (status === "Rejected" && (!note || !note.trim())) {
+      setError("Rejection reason is required.");
+      return;
     }
 
     try {
@@ -96,10 +103,12 @@ export default function FacultySubmissionDetailsPage() {
       setSuccess(null);
       const response = await apiPatchJson<UpdateSubmissionStatusResponse>(
         `/submissions/${submissionId}/status`,
-        { status }
+        { status, note, reviewerId: user?._id }
       );
       setSubmission(response.item);
       setSuccess(`Status updated to ${status}`);
+      setShowRejectForm(false);
+      setRejectReason("");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to update status";
       setError(message);
@@ -144,10 +153,24 @@ export default function FacultySubmissionDetailsPage() {
                 </div>
                 <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4">
                   <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
-                    <span>Research Center: {submission.department}</span>
+                    <span>Research Center: {submission.scholar?.researchCenter?.name || "N/A"}</span>
                     <StatusBadge status={submission.status} />
                   </div>
                 </div>
+                {submission.reviewNote && (
+                  <div className={`rounded-2xl border p-4 ${
+                    submission.status === "Rejected"
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : "border-blue-200 bg-blue-50 text-blue-700"
+                  }`}>
+                    <h3 className={`text-sm font-semibold ${
+                      submission.status === "Rejected" ? "text-red-900" : "text-blue-900"
+                    }`}>
+                      {submission.status === "Rejected" ? "Rejection Reason" : "Reviewer Remarks"}
+                    </h3>
+                    <p className="mt-1 text-sm whitespace-pre-line">{submission.reviewNote}</p>
+                  </div>
+                )}
                 <div>
                   <h3 className="text-sm font-semibold text-[color:var(--maroon-900)]">
                     Abstract
@@ -182,30 +205,63 @@ export default function FacultySubmissionDetailsPage() {
               <div className="rounded-2xl border border-[color:var(--border)] bg-white p-4 shadow-sm">
                 <h3 className="text-sm font-semibold text-[color:var(--maroon-900)]">Actions</h3>
                 <div className="mt-4 space-y-3">
-                  <button
-                    type="button"
-                    onClick={() => handleChangeStatus('Approved')}
-                    disabled={saving || submission.status === 'Approved'}
-                    className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white"
-                  >
-                    {saving ? 'Processing...' : 'Approve'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChangeStatus('Rejected')}
-                    disabled={saving || submission.status === 'Rejected'}
-                    className="w-full rounded-full border border-[color:var(--border)] px-4 py-2 text-xs font-semibold text-slate-600"
-                  >
-                    Reject
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChangeStatus('In Review')}
-                    disabled={saving || submission.status === 'In Review'}
-                    className="w-full rounded-full border border-[color:var(--border)] px-4 py-2 text-xs font-semibold text-slate-600"
-                  >
-                    Request Changes
-                  </button>
+                  {!showRejectForm ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleChangeStatus('Approved')}
+                        disabled={saving || submission.status === 'Approved'}
+                        className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-50"
+                      >
+                        {saving ? 'Processing...' : 'Approve'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(true)}
+                        disabled={saving || submission.status === 'Rejected'}
+                        className="w-full rounded-full border border-red-200 px-4 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 transition disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                          Reason for Rejection *
+                        </label>
+                        <textarea
+                          placeholder="Please provide a reason for rejection..."
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          className="mt-1 w-full rounded-xl border border-[color:var(--border)] p-2 text-xs text-slate-700 min-h-[80px] focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleChangeStatus('Rejected', rejectReason);
+                          }}
+                          disabled={saving || !rejectReason.trim()}
+                          className="flex-1 rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700 transition disabled:opacity-50"
+                        >
+                          {saving ? 'Processing...' : 'Confirm Reject'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowRejectForm(false);
+                            setRejectReason("");
+                          }}
+                          disabled={saving}
+                          className="rounded-full border border-[color:var(--border)] px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {success ? <p className="text-xs text-emerald-600">{success}</p> : null}
                   {error ? <p className="text-xs text-red-600">{error}</p> : null}
                 </div>

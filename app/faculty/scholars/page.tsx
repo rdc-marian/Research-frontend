@@ -14,7 +14,7 @@ type Scholar = {
   _id: string;
   name?: string;
   email?: string;
-  department?: string;
+  researchCenter?: { _id: string; name: string } | null;
   status?: string;
   guide?: { _id?: string; name?: string } | null;
 };
@@ -22,7 +22,7 @@ type Scholar = {
 const activeColumns = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Research Center" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
 ];
@@ -30,20 +30,20 @@ const activeColumns = [
 const pendingColumns = [
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
-  { key: "department", label: "Research Center" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "action", label: "Action", align: "right" as const },
 ];
 
 export default function FacultyScholarsPage() {
   const { user } = useAuth();
   const [scholars, setScholars] = useState<Scholar[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
+  const [researchCenters, setResearchCenters] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newScholar, setNewScholar] = useState({ name: "", email: "", department: "" });
+  const [newScholar, setNewScholar] = useState({ name: "", email: "", researchCenterId: "" });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -54,11 +54,11 @@ export default function FacultyScholarsPage() {
         setError(null);
         const [scholarsRes, deptsRes] = await Promise.all([
           apiGet<ApiListResponse<Scholar>>("/users?role=scholar"),
-          apiGet<ApiListResponse<any>>("/departments"),
+          apiGet<ApiListResponse<any>>("/research-centers"),
         ]);
         if (!isMounted) return;
         setScholars(scholarsRes.items);
-        setDepartments(deptsRes.items);
+        setResearchCenters(deptsRes.items);
       } catch (err) {
         if (!isMounted) return;
         setError(err instanceof Error ? err.message : "Failed to load scholars");
@@ -133,7 +133,7 @@ export default function FacultyScholarsPage() {
       csvContent += "Scholar Report\n";
       csvContent += `Name,${scholar.name || "Unknown"}\n`;
       csvContent += `Email,${scholar.email || "N/A"}\n`;
-      csvContent += `Research Center,${scholar.department || "N/A"}\n`;
+      csvContent += `Research Center,${scholar.researchCenter?.name || "N/A"}\n`;
       csvContent += `Status,${scholar.status || "Active"}\n\n`;
       csvContent += "Submissions List\n";
       csvContent += "SI No.,Title,Status,Submitted At\n";
@@ -166,7 +166,7 @@ export default function FacultyScholarsPage() {
   };
 
   const handleAddScholar = async () => {
-    if (!newScholar.name.trim() || !newScholar.email.trim() || !newScholar.department) {
+    if (!newScholar.name.trim() || !newScholar.email.trim() || !newScholar.researchCenterId) {
       alert("Please fill in all fields.");
       return;
     }
@@ -178,13 +178,13 @@ export default function FacultyScholarsPage() {
         email: newScholar.email.trim(),
         role: "scholar",
         roles: ["scholar"],
-        department: newScholar.department,
+        researchCenterId: newScholar.researchCenterId,
         guideId: user._id,
         status: "Active",
       });
       setScholars((prev) => [...prev, res.item]);
       setShowAddModal(false);
-      setNewScholar({ name: "", email: "", department: "" });
+      setNewScholar({ name: "", email: "", researchCenterId: "" });
     } catch (err: any) {
       alert(err?.message || "Failed to add scholar.");
     } finally {
@@ -197,7 +197,7 @@ export default function FacultyScholarsPage() {
       id: scholar._id,
       name: scholar.name ?? "Unknown",
       email: scholar.email ?? "N/A",
-      department: scholar.department ?? "N/A",
+      researchCenter: scholar.researchCenter?.name ?? "N/A",
       action: (
         <div className="flex items-center justify-end gap-2">
           <button
@@ -227,7 +227,7 @@ export default function FacultyScholarsPage() {
       id: scholar._id,
       name: scholar.name ?? "Unknown",
       email: scholar.email ?? "N/A",
-      department: scholar.department ?? "N/A",
+      researchCenter: scholar.researchCenter?.name ?? "N/A",
       status: <StatusBadge status={scholar.status ?? "Active"} />,
       action: (
         <div className="flex items-center justify-end gap-2">
@@ -343,13 +343,13 @@ export default function FacultyScholarsPage() {
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Research Center</label>
                 <select
-                  value={newScholar.department}
-                  onChange={(e) => setNewScholar(prev => ({ ...prev, department: e.target.value }))}
+                  value={newScholar.researchCenterId}
+                  onChange={(e) => setNewScholar(prev => ({ ...prev, researchCenterId: e.target.value }))}
                   className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
                 >
                   <option value="" disabled>Select Research Center</option>
-                  {departments.map((d) => (
-                    <option key={d._id} value={d.name}>{d.name}</option>
+                  {researchCenters.map((d) => (
+                    <option key={d._id} value={d._id}>{d.name}</option>
                   ))}
                 </select>
               </div>

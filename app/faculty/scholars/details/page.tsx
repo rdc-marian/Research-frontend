@@ -15,7 +15,7 @@ type Scholar = {
   _id: string;
   name?: string;
   email?: string;
-  department?: string;
+  researchCenter?: { _id: string; name: string } | null;
   status?: string;
 };
 
@@ -45,7 +45,6 @@ function FacultyScholarDetailsContent() {
   const scholarId = useMemo(() => searchParams.get("id") ?? "", [searchParams]);
   const [scholar, setScholar] = useState<Scholar | null>(null);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(Boolean(scholarId));
   const [error, setError] = useState<string | null>(null);
 
@@ -53,7 +52,6 @@ function FacultyScholarDetailsContent() {
   const [saving, setSaving] = useState(false);
   const [formState, setFormState] = useState({
     title: "",
-    department: "",
     abstract: "",
     file: null as File | null,
   });
@@ -67,19 +65,13 @@ function FacultyScholarDetailsContent() {
       try {
         setLoading(true);
         setError(null);
-        const [scholarRes, submissionRes, deptsRes] = await Promise.all([
+        const [scholarRes, submissionRes] = await Promise.all([
           apiGet<ApiItemResponse<Scholar>>(`/users/${scholarId}`),
           apiGet<ApiListResponse<Submission>>(`/submissions?scholarId=${scholarId}`),
-          apiGet<ApiListResponse<any>>("/departments"),
         ]);
         if (!isMounted) return;
         setScholar(scholarRes.item);
         setSubmissions(submissionRes.items);
-        setDepartments(deptsRes.items);
-        setFormState(prev => ({
-          ...prev,
-          department: scholarRes.item.department || (deptsRes.items[0]?.name ?? "")
-        }));
       } catch (err) {
         if (!isMounted) return;
         setError(err instanceof Error ? err.message : "Failed to load scholar details");
@@ -94,7 +86,7 @@ function FacultyScholarDetailsContent() {
   }, [scholarId]);
 
   const handleAddSubmission = async () => {
-    if (!formState.title.trim() || !formState.department || !formState.abstract.trim()) {
+    if (!formState.title.trim() || !formState.abstract.trim()) {
       alert("Please fill in all fields.");
       return;
     }
@@ -103,7 +95,6 @@ function FacultyScholarDetailsContent() {
       const payload = new FormData();
       payload.append("title", formState.title.trim());
       payload.append("abstract", formState.abstract.trim());
-      payload.append("department", formState.department);
       payload.append("scholarId", scholarId);
       if (formState.file) {
         payload.append("file", formState.file);
@@ -113,7 +104,6 @@ function FacultyScholarDetailsContent() {
       setShowAddModal(false);
       setFormState({
         title: "",
-        department: scholar?.department || (departments[0]?.name ?? ""),
         abstract: "",
         file: null,
       });
@@ -168,7 +158,7 @@ function FacultyScholarDetailsContent() {
                   <h2 className="font-display text-lg text-[color:var(--maroon-900)]">{scholar.name ?? "Unknown"}</h2>
                   <p className="text-sm text-slate-500">{scholar.email ?? "N/A"}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                    <span>{scholar.department ? `${scholar.department} Research Center` : "N/A"}</span>
+                    <span>{scholar.researchCenter?.name ? `${scholar.researchCenter.name} Research Center` : "N/A"}</span>
                     <StatusBadge status={scholar.status ?? "Active"} />
                   </div>
                 </div>
@@ -222,15 +212,9 @@ function FacultyScholarDetailsContent() {
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Research Center</label>
-                <select
-                  value={formState.department}
-                  onChange={(e) => setFormState(prev => ({ ...prev, department: e.target.value }))}
-                  className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
-                >
-                  {departments.map((d) => (
-                    <option key={d._id} value={d.name}>{d.name}</option>
-                  ))}
-                </select>
+                <div className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3.5 py-2 text-xs text-slate-500">
+                  {scholar?.researchCenter?.name || "N/A"}
+                </div>
               </div>
               <div>
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">File Upload (PDF)</label>

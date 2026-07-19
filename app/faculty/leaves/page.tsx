@@ -17,7 +17,7 @@ type LeaveItem = {
     _id: string;
     name: string;
     email: string;
-    department?: string;
+    researchCenter?: { name?: string };
   };
   startDate: string;
   endDate: string;
@@ -61,11 +61,11 @@ export default function CoordinatorLeavesPage() {
     try {
       setLoading(true);
       setError(null);
-      // Fetch leaves for the coordinator's department.
+      // Fetch leaves for the coordinator's research center.
       // If admin, fetch all leaves.
       const path = user.role === "admin"
         ? "/leaves"
-        : `/leaves?department=${user.department || ""}`;
+        : `/leaves?researchCenterId=${user.researchCenter?._id || (typeof user.researchCenter === "string" ? user.researchCenter : "")}`;
       const res = await apiGet<ApiListResponse<LeaveItem>>(path);
       // We display leaves that are:
       // - Pending guide approval (ApprovedByGuide is needed first, but we display all to give visibility)
@@ -122,7 +122,7 @@ export default function CoordinatorLeavesPage() {
       scholar: (
         <div>
           <p className="font-semibold text-slate-800">{item.scholar?.name}</p>
-          <p className="text-[10px] text-slate-400">{item.scholar?.department}</p>
+          <p className="text-[10px] text-slate-400">{item.scholar?.researchCenter?.name}</p>
         </div>
       ),
       type: item.leaveType,

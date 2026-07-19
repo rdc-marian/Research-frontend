@@ -23,7 +23,7 @@ type ReportSummary = {
   };
 };
 
-type Department = {
+type ResearchCenter = {
   _id: string;
   name: string;
 };
@@ -35,18 +35,18 @@ export default function FacultyReportsPage() {
   const { user } = useAuth();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [department, setDepartment] = useState("");
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [researchCenterId, setResearchCenterId] = useState("");
+  const [researchCenters, setResearchCenters] = useState<ResearchCenter[]>([]);
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadSummary = useCallback(
-    async (filters?: { from?: string; to?: string; department?: string }) => {
+    async (filters?: { from?: string; to?: string; researchCenterId?: string }) => {
       const searchParams = new URLSearchParams();
       if (filters?.from) searchParams.set("from", filters.from);
       if (filters?.to) searchParams.set("to", filters.to);
-      if (filters?.department) searchParams.set("department", filters.department);
+      if (filters?.researchCenterId) searchParams.set("researchCenterId", filters.researchCenterId);
 
       const suffix = searchParams.toString();
       const path = suffix ? `/reports/summary?${suffix}` : "/reports/summary";
@@ -63,13 +63,13 @@ export default function FacultyReportsPage() {
       try {
         setLoading(true);
         setError(null);
-        const [summaryResponse, departmentsResponse] = await Promise.all([
+        const [summaryResponse, researchCentersResponse] = await Promise.all([
           loadSummary(),
-          apiGet<{ items: Department[] }>("/departments"),
+          apiGet<{ items: ResearchCenter[] }>("/research-centers"),
         ]);
         if (!isMounted) return;
         setSummary(summaryResponse);
-        setDepartments(departmentsResponse.items);
+        setResearchCenters(researchCentersResponse.items);
       } catch (err) {
         if (!isMounted) return;
         const message = err instanceof Error ? err.message : "Failed to load report";
@@ -115,7 +115,7 @@ export default function FacultyReportsPage() {
       const nextSummary = await loadSummary({
         from: fromDate || undefined,
         to: toDate || undefined,
-        department: department || undefined,
+        researchCenterId: researchCenterId || undefined,
       });
       setSummary(nextSummary);
     } catch (err) {
@@ -170,12 +170,12 @@ export default function FacultyReportsPage() {
             </label>
             <select
               className={inputClass}
-              value={department}
-              onChange={(event) => setDepartment(event.target.value)}
+              value={researchCenterId}
+              onChange={(event) => setResearchCenterId(event.target.value)}
             >
               <option value="">All Research Centers</option>
-              {departments.map((item) => (
-                <option key={item._id} value={item.name}>
+              {researchCenters.map((item) => (
+                <option key={item._id} value={item._id}>
                   {item.name}
                 </option>
               ))}

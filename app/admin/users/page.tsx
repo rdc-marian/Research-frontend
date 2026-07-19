@@ -17,7 +17,6 @@ type User = {
   role: string;
   roles?: string[];
   permissions?: string[];
-  department?: string;
   status?: string;
   avatar?: string;
   preferences?: any;
@@ -29,7 +28,6 @@ type ResearchCenter = {
   _id: string;
   name: string;
   code?: string;
-  department?: string;
 };
 
 type Guide = {
@@ -37,12 +35,6 @@ type Guide = {
   name: string;
   email?: string;
   researchCenter?: { _id?: string; name?: string; code?: string } | null;
-  department?: string;
-};
-
-type Department = {
-  _id: string;
-  name: string;
 };
 
 const columns = [
@@ -79,7 +71,6 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [researchCenters, setResearchCenters] = useState<ResearchCenter[]>([]);
   const [guides, setGuides] = useState<Guide[]>([]);
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -157,17 +148,15 @@ export default function AdminUsersPage() {
       try {
         setLoading(true);
         setError(null);
-        const [usersRes, centersRes, guidesRes, departmentsRes] = await Promise.all([
+        const [usersRes, centersRes, guidesRes] = await Promise.all([
           apiGet<ApiListResponse<User>>("/users"),
           apiGet<ApiListResponse<ResearchCenter>>("/research-centers"),
           apiGet<ApiListResponse<Guide>>("/users?role=research_guide"),
-          apiGet<ApiListResponse<Department>>("/departments"),
         ]);
         if (!isMounted) return;
         setUsers(usersRes.items);
         setResearchCenters(centersRes.items);
         setGuides(guidesRes.items);
-        setDepartments(departmentsRes.items);
       } catch (err) {
         if (!isMounted) return;
         const message = err instanceof Error ? err.message : "Failed to load users";
@@ -227,18 +216,11 @@ export default function AdminUsersPage() {
       }
 
       let finalCenterId = formState.researchCenterId;
-      let finalDept = "";
 
       if (mainRole === "scholar") {
         const selectedGuide = guides.find((g) => g._id === formState.guideId);
         if (selectedGuide) {
           finalCenterId = selectedGuide.researchCenter?._id || (selectedGuide.researchCenter as any) || "";
-          finalDept = selectedGuide.researchCenter?.name || selectedGuide.department || "";
-        }
-      } else if (mainRole === "faculty") {
-        const selectedCenter = researchCenters.find((c) => c._id === formState.researchCenterId);
-        if (selectedCenter) {
-          finalDept = selectedCenter.department || "";
         }
       }
 
@@ -248,7 +230,6 @@ export default function AdminUsersPage() {
         role: mainRole,
         roles: [mainRole],
         permissions: mainRole === "faculty" ? formState.permissions : [],
-        department: finalDept || undefined,
         researchCenterId: finalCenterId || undefined,
         guideId: requiresGuide ? formState.guideId : undefined,
       };
@@ -323,7 +304,6 @@ export default function AdminUsersPage() {
           </div>
         ),
         researchCenter: user.researchCenter?.name ?? "N/A",
-        department: user.department || "N/A",
         status: <StatusBadge status={user.status ?? "Active"} />,
         action: (
           <div className="flex justify-end gap-2">
@@ -494,7 +474,7 @@ export default function AdminUsersPage() {
                       <option value="">Select Research Guide</option>
                       {guides.map((guide) => (
                         <option key={guide._id} value={guide._id}>
-                          {guide.name} ({guide.department || "No Department"})
+                          {guide.name} ({guide.researchCenter?.name || "No Research Center"})
                         </option>
                       ))}
                     </select>

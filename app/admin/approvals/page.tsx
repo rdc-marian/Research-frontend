@@ -12,16 +12,20 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   submittedAt?: string;
   status: string;
-  scholar?: { name?: string };
+  scholar?: {
+    name?: string;
+    researchCenter?: {
+      name?: string;
+    };
+  };
 };
 
 const columns = [
   { key: "title", label: "Title" },
   { key: "author", label: "Author" },
-  { key: "department", label: "Research Center" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "submitted", label: "Submitted On" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
@@ -80,7 +84,7 @@ export default function AdminApprovalsPage() {
         id: submission._id,
         title: submission.title,
         author: submission.scholar?.name ?? "Unknown",
-        department: submission.department,
+        researchCenter: submission.scholar?.researchCenter?.name || "N/A",
         submitted: formatDate(submission.submittedAt),
         status: <StatusBadge status={submission.status} />,
         action: (

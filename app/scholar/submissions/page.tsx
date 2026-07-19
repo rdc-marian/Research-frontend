@@ -13,14 +13,13 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   submittedAt?: string;
   status: string;
+  reviewNote?: string | null;
 };
 
 const columns = [
   { key: "title", label: "Title" },
-  { key: "department", label: "Department" },
   { key: "submitted", label: "Date Submitted" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
@@ -43,6 +42,7 @@ export default function ScholarSubmissionsPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRejectReason, setSelectedRejectReason] = useState<string | null>(null);
 
   const handleDelete = async (id: string) => {
     const confirmed = window.confirm(
@@ -110,9 +110,21 @@ export default function ScholarSubmissionsPage() {
             {submission.title}
           </Link>
         ),
-        department: submission.department,
         submitted: formatDate(submission.submittedAt),
-        status: <StatusBadge status={submission.status} />,
+        status: (
+          <div className="flex items-center gap-2">
+            <StatusBadge status={submission.status} />
+            {submission.status === "Rejected" && (
+              <button
+                type="button"
+                onClick={() => setSelectedRejectReason(submission.reviewNote ?? "No reason provided.")}
+                className="text-[10px] font-bold text-red-600 hover:text-red-700 hover:underline"
+              >
+                View Reason
+              </button>
+            )}
+          </div>
+        ),
         action: (
           <div className="flex items-center justify-end gap-2">
             <Link
@@ -184,6 +196,28 @@ export default function ScholarSubmissionsPage() {
           )}
         </div>
       </section>
+
+      {selectedRejectReason !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-[color:var(--border)]">
+            <h3 className="font-display text-base font-bold text-red-600">
+              Rejection Reason
+            </h3>
+            <p className="mt-3 text-xs text-slate-600 whitespace-pre-line leading-relaxed">
+              {selectedRejectReason || "No reason provided."}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedRejectReason(null)}
+                className="px-5 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </PageLayout>
   );
 }

@@ -13,7 +13,9 @@ type Scholar = {
   _id: string;
   name: string;
   email: string;
-  department: string;
+  researchCenter?: {
+    name: string;
+  };
   guide?: {
     name: string;
     email: string;
@@ -76,7 +78,7 @@ export default function AdminScholarPortfoliosPage() {
   const columns = [
     { key: "name", label: "Scholar Name" },
     { key: "email", label: "Email ID" },
-    { key: "department", label: "Research Center" },
+    { key: "researchCenter", label: "Research Center" },
     { key: "guide", label: "Research Guide" },
     { key: "action", label: "Action", align: "right" as const },
   ];
@@ -96,7 +98,7 @@ export default function AdminScholarPortfoliosPage() {
         </div>
       ),
       email: scholar.email,
-      department: scholar.department,
+      researchCenter: scholar.researchCenter?.name || "N/A",
       guide: scholar.guide?.name ?? "Not Assigned",
       action: (
         <div className="flex justify-end">
@@ -155,7 +157,7 @@ export default function AdminScholarPortfoliosPage() {
                     {selectedScholar.name} - Research Portfolio
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Research Center: {selectedScholar.department} | Guide: {selectedScholar.guide?.name || "Unassigned"}
+                    Research Center: {selectedScholar.researchCenter?.name || "N/A"} | Guide: {selectedScholar.guide?.name || "Unassigned"}
                   </p>
                 </div>
                 <button

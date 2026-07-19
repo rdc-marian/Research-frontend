@@ -23,26 +23,26 @@ export default function ScholarProfilePage() {
           Profile details
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Update your contact information and department.
+          View or update your profile details.
         </p>
         <form className="mt-6 space-y-5">
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="name">
               Full name
             </label>
-            <input id="name" className={inputClass} />
+            <input id="name" value={user?.name || ""} readOnly disabled className="mt-2 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm cursor-not-allowed focus:outline-none" />
           </div>
           <div>
             <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="email">
               Email
             </label>
-            <input id="email" className={inputClass} />
+            <input id="email" value={user?.email || ""} readOnly disabled className="mt-2 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm cursor-not-allowed focus:outline-none" />
           </div>
           <div>
-            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="department">
-              Department
+            <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="researchCenter">
+              Research Center
             </label>
-            <input id="department" className={inputClass} />
+            <input id="researchCenter" value={user?.researchCenter?.name || user?.researchCenter || ""} readOnly disabled className="mt-2 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3 py-2 text-sm text-slate-500 shadow-sm cursor-not-allowed focus:outline-none" />
           </div>
           <div className="flex flex-wrap gap-3">
             <button

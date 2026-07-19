@@ -14,11 +14,6 @@ import {
   type ApiListResponse,
 } from "@/lib/api";
 
-type Department = {
-  _id: string;
-  name: string;
-};
-
 type Scholar = {
   _id: string;
   name: string;
@@ -28,7 +23,6 @@ type Submission = {
   _id: string;
   title: string;
   abstract: string;
-  department: string;
   scholar?: { _id?: string } | null;
   file?: { originalName?: string } | null;
 };
@@ -44,8 +38,6 @@ export default function ScholarEditSubmissionPage() {
     return Array.isArray(id) ? id[0] : id;
   }, [params]);
 
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [scholars, setScholars] = useState<Scholar[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +45,6 @@ export default function ScholarEditSubmissionPage() {
   const [currentFileName, setCurrentFileName] = useState<string | null>(null);
   const [formState, setFormState] = useState({
     title: "",
-    department: "",
     scholarId: "",
     abstract: "",
     file: null as File | null,
@@ -67,17 +58,10 @@ export default function ScholarEditSubmissionPage() {
       try {
         setLoading(true);
         setError(null);
-        const [departmentsRes, scholarsRes, submissionRes] = await Promise.all([
-          apiGet<ApiListResponse<Department>>("/departments"),
-          apiGet<ApiListResponse<Scholar>>("/users?role=scholar"),
-          apiGet<ApiItemResponse<Submission>>(`/submissions/${submissionId}`),
-        ]);
+        const submissionRes = await apiGet<ApiItemResponse<Submission>>(`/submissions/${submissionId}`);
         if (!isMounted) return;
-        setDepartments(departmentsRes.items);
-        setScholars(scholarsRes.items);
         setFormState({
           title: submissionRes.item.title ?? "",
-          department: submissionRes.item.department ?? "",
           scholarId: submissionRes.item.scholar?._id ?? "",
           abstract: submissionRes.item.abstract ?? "",
           file: null,
@@ -111,10 +95,9 @@ export default function ScholarEditSubmissionPage() {
       if (
         !formState.title.trim() ||
         !formState.abstract.trim() ||
-        !formState.department ||
         !formState.scholarId
       ) {
-        setError("Title, abstract, department, and scholar are required.");
+        setError("Title, abstract, and scholar are required.");
         setSaving(false);
         return;
       }
@@ -122,7 +105,6 @@ export default function ScholarEditSubmissionPage() {
       const payload = new FormData();
       payload.append("title", formState.title.trim());
       payload.append("abstract", formState.abstract.trim());
-      payload.append("department", formState.department);
       payload.append("scholarId", formState.scholarId);
       if (formState.file) {
         payload.append("file", formState.file);
@@ -181,59 +163,29 @@ export default function ScholarEditSubmissionPage() {
               }
             />
           </div>
-          <div className="grid gap-4 lg:grid-cols-2">
-            <div>
-              <label
-                className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="department"
-              >
-                Department
-              </label>
-              <select
-                id="department"
-                className={inputClass}
-                value={formState.department}
-                onChange={(event) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    department: event.target.value,
-                  }))
-                }
-              >
-                <option value="" disabled>
-                  Select department
-                </option>
-                {departments.map((item) => (
-                  <option key={item._id} value={item.name}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label
-                className="text-xs font-semibold uppercase tracking-wide text-slate-500"
-                htmlFor="file"
-              >
-                File upload (PDF)
-              </label>
-              <input
-                id="file"
-                type="file"
-                className={inputClass}
-                onChange={(event) =>
-                  setFormState((prev) => ({
-                    ...prev,
-                    file: event.target.files?.[0] ?? null,
-                  }))
-                }
-              />
-              {currentFileName ? (
-                <p className="mt-2 text-xs text-slate-500">
-                  Current file: {currentFileName}
-                </p>
-              ) : null}
-            </div>
+          <div>
+            <label
+              className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+              htmlFor="file"
+            >
+              File upload (PDF)
+            </label>
+            <input
+              id="file"
+              type="file"
+              className={inputClass}
+              onChange={(event) =>
+                setFormState((prev) => ({
+                  ...prev,
+                  file: event.target.files?.[0] ?? null,
+                }))
+              }
+            />
+            {currentFileName ? (
+              <p className="mt-2 text-xs text-slate-500">
+                Current file: {currentFileName}
+              </p>
+            ) : null}
           </div>
           <div>
             <label
@@ -242,26 +194,9 @@ export default function ScholarEditSubmissionPage() {
             >
               Scholar
             </label>
-            <select
-              id="scholar"
-              className={inputClass}
-              value={formState.scholarId}
-              onChange={(event) =>
-                setFormState((prev) => ({
-                  ...prev,
-                  scholarId: event.target.value,
-                }))
-              }
-            >
-              <option value="" disabled>
-                Select scholar
-              </option>
-              {scholars.map((item) => (
-                <option key={item._id} value={item._id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
+            <div className={inputClass}>
+              {user?.name || "Scholar"}
+            </div>
           </div>
           <div>
             <label

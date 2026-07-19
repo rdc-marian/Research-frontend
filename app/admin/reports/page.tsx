@@ -30,7 +30,7 @@ type ReportSummary = {
   };
 };
 
-type Department = {
+type ResearchCenter = {
   _id: string;
   name: string;
 };
@@ -42,8 +42,8 @@ export default function AdminReportsPage() {
   const { user } = useAuth();
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [department, setDepartment] = useState("");
-  const [departments, setDepartments] = useState<Department[]>([]);
+  const [researchCenterId, setResearchCenterId] = useState("");
+  const [researchCenters, setResearchCenters] = useState<ResearchCenter[]>([]);
   const [reportType, setReportType] = useState("Submission Summary");
 
   const [summary, setSummary] = useState<ReportSummary | null>(null);
@@ -52,11 +52,11 @@ export default function AdminReportsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const loadReportData = useCallback(
-    async (type: string, from?: string, to?: string, dept?: string) => {
+    async (type: string, from?: string, to?: string, researchCenterId?: string) => {
       const searchParams = new URLSearchParams();
       if (from) searchParams.set("from", from);
       if (to) searchParams.set("to", to);
-      if (dept) searchParams.set("department", dept);
+      if (researchCenterId) searchParams.set("researchCenterId", researchCenterId);
 
       const suffix = searchParams.toString();
 
@@ -104,13 +104,13 @@ export default function AdminReportsPage() {
       try {
         setLoading(true);
         setError(null);
-        const [summaryResponse, departmentsResponse] = await Promise.all([
-          loadReportData(reportType, fromDate, toDate, department),
-          apiGet<{ items: Department[] }>("/departments"),
+        const [summaryResponse, researchCentersResponse] = await Promise.all([
+          loadReportData(reportType, fromDate, toDate, researchCenterId),
+          apiGet<{ items: ResearchCenter[] }>("/research-centers"),
         ]);
 
         if (!isMounted) return;
-        setDepartments(departmentsResponse.items);
+        setResearchCenters(researchCentersResponse.items);
       } catch (err) {
         if (!isMounted) return;
         setError(err instanceof Error ? err.message : "Failed to load report");
@@ -160,7 +160,7 @@ export default function AdminReportsPage() {
     try {
       setLoading(true);
       setError(null);
-      await loadReportData(reportType, fromDate || undefined, toDate || undefined, department || undefined);
+      await loadReportData(reportType, fromDate || undefined, toDate || undefined, researchCenterId || undefined);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load report");
     } finally {
@@ -172,7 +172,7 @@ export default function AdminReportsPage() {
     if (reportType === "Publications Registry") {
       return [
         { key: "scholar", label: "Scholar" },
-        { key: "department", label: "Research Center" },
+        { key: "researchCenter", label: "Research Center" },
         { key: "title", label: "Title" },
         { key: "journal", label: "Journal" },
         { key: "date", label: "Publish Date" },
@@ -181,7 +181,7 @@ export default function AdminReportsPage() {
     } else if (reportType === "Patents Registry") {
       return [
         { key: "scholar", label: "Scholar" },
-        { key: "department", label: "Research Center" },
+        { key: "researchCenter", label: "Research Center" },
         { key: "title", label: "Title" },
         { key: "appNo", label: "App Number" },
         { key: "status", label: "Patent Status" },
@@ -190,7 +190,7 @@ export default function AdminReportsPage() {
     } else if (reportType === "Leaves Summary") {
       return [
         { key: "scholar", label: "Scholar" },
-        { key: "department", label: "Research Center" },
+        { key: "researchCenter", label: "Research Center" },
         { key: "type", label: "Leave Type" },
         { key: "days", label: "Days", align: "center" as const },
         { key: "status", label: "Status", align: "right" as const },
@@ -210,7 +210,7 @@ export default function AdminReportsPage() {
         return {
           id: item._id,
           scholar: item.scholar?.name || "Unknown",
-          department: item.scholar?.department || "N/A",
+          researchCenter: item.scholar?.researchCenter?.name || "N/A",
           title: item.title,
           journal: item.journalName,
           date: formatDateStr(item.publishDate),
@@ -220,7 +220,7 @@ export default function AdminReportsPage() {
         return {
           id: item._id,
           scholar: item.scholar?.name || "Unknown",
-          department: item.scholar?.department || "N/A",
+          researchCenter: item.scholar?.researchCenter?.name || "N/A",
           title: item.title,
           appNo: item.applicationNumber,
           status: item.patentStatus,
@@ -230,7 +230,7 @@ export default function AdminReportsPage() {
         return {
           id: item._id,
           scholar: item.scholar?.name || "Unknown",
-          department: item.scholar?.department || "N/A",
+          researchCenter: item.scholar?.researchCenter?.name || "N/A",
           type: item.leaveType,
           days: item.totalDays,
           status: <StatusBadge status={item.status} />,
@@ -284,12 +284,12 @@ export default function AdminReportsPage() {
             </label>
             <select
               className={inputClass}
-              value={department}
-              onChange={(event) => setDepartment(event.target.value)}
+              value={researchCenterId}
+              onChange={(event) => setResearchCenterId(event.target.value)}
             >
               <option value="">All Research Centers</option>
-              {departments.map((item) => (
-                <option key={item._id} value={item.name}>
+              {researchCenters.map((item) => (
+                <option key={item._id} value={item._id}>
                   {item.name}
                 </option>
               ))}

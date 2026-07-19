@@ -13,16 +13,21 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   submittedAt?: string;
   status: string;
-  scholar?: { name?: string };
+  scholar?: {
+    name?: string;
+    researchCenter?: {
+      name?: string;
+    };
+  };
+  reviewNote?: string | null;
 };
 
 const columns = [
   { key: "title", label: "Title" },
   { key: "scholar", label: "Scholar" },
-  { key: "department", label: "Research Center" },
+  { key: "researchCenter", label: "Research Center" },
   { key: "submitted", label: "Submitted On" },
   { key: "status", label: "Status" },
   { key: "action", label: "Action", align: "right" as const },
@@ -43,17 +48,16 @@ export default function FacultySubmissionsPage() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [scholars, setScholars] = useState<any[]>([]);
-  const [departments, setDepartments] = useState<any[]>([]);
   const [statusFilter, setStatusFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRejectReason, setSelectedRejectReason] = useState<string | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formState, setFormState] = useState({
     title: "",
     scholarId: "",
-    department: "",
     abstract: "",
     file: null as File | null,
   });
@@ -65,20 +69,15 @@ export default function FacultySubmissionsPage() {
       try {
         setLoading(true);
         setError(null);
-        const [submissionsRes, scholarsRes, deptsRes] = await Promise.all([
+        const [submissionsRes, scholarsRes] = await Promise.all([
           apiGet<ApiListResponse<Submission>>("/submissions"),
           apiGet<ApiListResponse<any>>("/users?role=scholar"),
-          apiGet<ApiListResponse<any>>("/departments"),
         ]);
         if (!isMounted) return;
         setSubmissions(submissionsRes.items);
         setScholars(scholarsRes.items);
-        setDepartments(deptsRes.items);
         if (scholarsRes.items.length > 0) {
           setFormState(prev => ({ ...prev, scholarId: scholarsRes.items[0]._id }));
-        }
-        if (deptsRes.items.length > 0) {
-          setFormState(prev => ({ ...prev, department: deptsRes.items[0].name }));
         }
       } catch (err) {
         if (!isMounted) return;
@@ -98,7 +97,7 @@ export default function FacultySubmissionsPage() {
   }, []);
 
   const handleAddSubmission = async () => {
-    if (!formState.title.trim() || !formState.scholarId || !formState.department || !formState.abstract.trim()) {
+    if (!formState.title.trim() || !formState.scholarId || !formState.abstract.trim()) {
       alert("Please fill in all fields.");
       return;
     }
@@ -107,7 +106,6 @@ export default function FacultySubmissionsPage() {
       const payload = new FormData();
       payload.append("title", formState.title.trim());
       payload.append("abstract", formState.abstract.trim());
-      payload.append("department", formState.department);
       payload.append("scholarId", formState.scholarId);
       if (formState.file) {
         payload.append("file", formState.file);
@@ -118,7 +116,6 @@ export default function FacultySubmissionsPage() {
       setFormState({
         title: "",
         scholarId: scholars[0]?._id ?? "",
-        department: departments[0]?.name ?? "",
         abstract: "",
         file: null,
       });
@@ -143,9 +140,22 @@ export default function FacultySubmissionsPage() {
         id: submission._id,
         title: submission.title,
         scholar: submission.scholar?.name ?? "Unknown",
-        department: submission.department,
+        researchCenter: submission.scholar?.researchCenter?.name || "N/A",
         submitted: formatDate(submission.submittedAt),
-        status: <StatusBadge status={submission.status} />,
+        status: (
+          <div className="flex items-center gap-2">
+            <StatusBadge status={submission.status} />
+            {submission.status === "Rejected" && (
+              <button
+                type="button"
+                onClick={() => setSelectedRejectReason(submission.reviewNote ?? "No reason provided.")}
+                className="text-[10px] font-bold text-red-600 hover:text-red-700 hover:underline"
+              >
+                View Reason
+              </button>
+            )}
+          </div>
+        ),
         action: (
           <Link
             href={`/faculty/submissions/details/${submission._id}`}
@@ -210,6 +220,28 @@ export default function FacultySubmissionsPage() {
         </div>
       </section>
 
+      {selectedRejectReason !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-[color:var(--border)]">
+            <h3 className="font-display text-base font-bold text-red-600">
+              Rejection Reason
+            </h3>
+            <p className="mt-3 text-xs text-slate-600 whitespace-pre-line leading-relaxed">
+              {selectedRejectReason || "No reason provided."}
+            </p>
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setSelectedRejectReason(null)}
+                className="px-5 py-1.5 rounded-full bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl border border-[color:var(--border)]">
@@ -251,15 +283,13 @@ export default function FacultySubmissionsPage() {
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Research Center</label>
-                  <select
-                    value={formState.department}
-                    onChange={(e) => setFormState(prev => ({ ...prev, department: e.target.value }))}
-                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
-                  >
-                    {departments.map((d) => (
-                      <option key={d._id} value={d.name}>{d.name}</option>
-                    ))}
-                  </select>
+                  <input
+                    type="text"
+                    value={scholars.find(s => s._id === formState.scholarId)?.researchCenter?.name || "N/A"}
+                    readOnly
+                    disabled
+                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed focus:outline-none"
+                  />
                 </div>
               </div>
               <div>

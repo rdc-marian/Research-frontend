@@ -22,7 +22,6 @@ import { useAuth } from "@/components/AuthProvider";
 type Submission = {
   _id: string;
   title: string;
-  department: string;
   submittedAt?: string;
   status: string;
 };
@@ -213,7 +212,7 @@ export default function ScholarDashboard() {
     if (user && showEditProfileModal) {
       setProfileName(user.name || "");
       setProfileEmail(user.email || "");
-      setProfileDept(user.department || "");
+      setProfileDept(user.researchCenter?.name || user.researchCenter || "MCA");
       setProfileGuide(user.guide?.name || "");
       setProfileAvatar(user.preferences?.scholar_avatar || "");
       
@@ -257,7 +256,6 @@ export default function ScholarDashboard() {
       const res: any = await apiPatchJson("/users/" + user._id, {
         name: profileName,
         email: profileEmail,
-        department: profileDept,
         uniqueId: profileUniqueId,
         avatar: transformGoogleDriveLink(profileAvatar),
         preferences: {
@@ -508,7 +506,7 @@ export default function ScholarDashboard() {
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Research Center : </span>
-                <span className="font-bold text-slate-800">{user?.department || "MCA"}</span>
+                <span className="font-bold text-slate-800">{user?.researchCenter?.name || user?.researchCenter || "MCA"}</span>
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Email : </span>
@@ -709,8 +707,9 @@ export default function ScholarDashboard() {
                   <input
                     type="text"
                     value={profileDept}
-                    onChange={(e) => setProfileDept(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
+                    readOnly
+                    disabled
+                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed focus:outline-none"
                   />
                 </div>
               </div>

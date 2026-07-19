@@ -16,7 +16,7 @@ type PendingApprovalItem = {
     _id: string;
     name: string;
     email: string;
-    department?: string;
+    researchCenter?: { name?: string };
   };
   document?: {
     url: string;
@@ -145,7 +145,7 @@ export default function GuidePortfolioReviewsPage() {
       scholar: (
         <div>
           <p className="font-semibold text-slate-800">{item.scholar?.name}</p>
-          <p className="text-[10px] text-slate-400">{item.scholar?.department}</p>
+          <p className="text-[10px] text-slate-400">{item.scholar?.researchCenter?.name}</p>
         </div>
       ),
       category: (

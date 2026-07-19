@@ -324,7 +324,7 @@ export default function ScholarReportPage() {
                   <h3 className="font-bold text-slate-800 uppercase tracking-wider mb-2 text-sm border-b border-slate-200 pb-1">
                     Academic Scope
                   </h3>
-                  <p className="py-1"><strong>Research Center / Department:</strong> {user?.department || "MCA"}</p>
+                  <p className="py-1"><strong>Research Center:</strong> {user?.researchCenter?.name || user?.researchCenter || "MCA"}</p>
                   <p className="py-1"><strong>Research Guide:</strong> {user?.guide?.name || "Not Assigned"}</p>
                   <p className="py-1"><strong>Report Period:</strong> {formatDate(reportData.range.start.toISOString())} to {formatDate(reportData.range.end.toISOString())}</p>
                 </div>
@@ -674,7 +674,7 @@ export default function ScholarReportPage() {
                   </div>
                 </div>
                 <div className="space-y-4 flex flex-col justify-between items-end">
-                  <p className="text-right">This report has been compiled and is subject to verification by the registered Research Guide and Coordinator of the Department.</p>
+                  <p className="text-right">This report has been compiled and is subject to verification by the registered Research Guide and Research Center Coordinator.</p>
                   <div className="pt-8 text-left w-48">
                     <div className="border-b border-slate-300 w-48 mb-1"></div>
                     <p><strong>Verified by Research Guide</strong></p>
