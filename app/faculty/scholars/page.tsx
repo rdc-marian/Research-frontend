@@ -7,19 +7,24 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { facultyNav } from "@/data/roleNav";
-import { apiGet, apiDelete, apiPostJson, apiPatchJson, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiDelete, apiPostJson, apiPatchJson, getUserAvatarUrl, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
+import { ProfileImageModal, type ProfileUser } from "@/components/ProfileImageModal";
 
 type Scholar = {
   _id: string;
   name?: string;
   email?: string;
+  avatar?: string;
+  preferences?: any;
+  department?: string;
   researchCenter?: { _id: string; name: string } | null;
   status?: string;
   guide?: { _id?: string; name?: string } | null;
 };
 
 const activeColumns = [
+  { key: "avatar", label: "Photo" },
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
   { key: "researchCenter", label: "Research Center" },
@@ -28,6 +33,7 @@ const activeColumns = [
 ];
 
 const pendingColumns = [
+  { key: "avatar", label: "Photo" },
   { key: "name", label: "Name" },
   { key: "email", label: "Email" },
   { key: "researchCenter", label: "Research Center" },
@@ -45,6 +51,7 @@ export default function FacultyScholarsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newScholar, setNewScholar] = useState({ name: "", email: "", researchCenterId: "" });
   const [saving, setSaving] = useState(false);
+  const [selectedProfileUser, setSelectedProfileUser] = useState<ProfileUser | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -192,9 +199,45 @@ export default function FacultyScholarsPage() {
     }
   };
 
+  const renderAvatarCell = (scholar: Scholar) => {
+    const avatarUrl = getUserAvatarUrl(scholar);
+    return (
+      <div
+        onClick={() =>
+          setSelectedProfileUser({
+            name: scholar.name || "Scholar",
+            email: scholar.email,
+            role: "scholar",
+            avatar: avatarUrl,
+            department: scholar.department,
+            researchCenter: scholar.researchCenter,
+          })
+        }
+        className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0 cursor-pointer hover:ring-2 hover:ring-[color:var(--maroon-700)] hover:scale-105 transition-all shadow-sm"
+        title="Click to view profile photo"
+      >
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={scholar.name || "Scholar"}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+        ) : (
+          <span className="text-[10px] font-bold text-slate-500">
+            {(scholar.name || "SC").substring(0, 2).toUpperCase()}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   const pendingRows = useMemo(() =>
     pendingScholars.map((scholar) => ({
       id: scholar._id,
+      avatar: renderAvatarCell(scholar),
       name: scholar.name ?? "Unknown",
       email: scholar.email ?? "N/A",
       researchCenter: scholar.researchCenter?.name ?? "N/A",
@@ -225,6 +268,7 @@ export default function FacultyScholarsPage() {
   const activeRows = useMemo(() =>
     myScholars.map((scholar) => ({
       id: scholar._id,
+      avatar: renderAvatarCell(scholar),
       name: scholar.name ?? "Unknown",
       email: scholar.email ?? "N/A",
       researchCenter: scholar.researchCenter?.name ?? "N/A",
@@ -365,6 +409,11 @@ export default function FacultyScholarsPage() {
           </div>
         </div>
       )}
+      <ProfileImageModal
+        isOpen={!!selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
+        user={selectedProfileUser}
+      />
     </PageLayout>
   );
 }

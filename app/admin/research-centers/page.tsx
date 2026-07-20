@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Edit2, Trash2, X, Power } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Power, Building2, User, ChevronRight } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { adminNav } from "@/data/roleNav";
@@ -13,10 +13,6 @@ type ResearchCenter = {
   _id: string;
   name: string;
   code: string;
-  description?: string;
-  officeLocation?: string;
-  contactEmail?: string;
-  contactPhone?: string;
   status: string;
   coordinator?: { _id?: string; name?: string; email?: string } | null;
 };
@@ -32,7 +28,7 @@ type User = {
 };
 
 const inputClass =
-  "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all";
+  "mt-1.5 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2.5 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all";
 
 export default function AdminResearchCentersPage() {
   const { user } = useAuth();
@@ -42,32 +38,13 @@ export default function AdminResearchCentersPage() {
   const [error, setError] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editingCenter, setEditingCenter] = useState<ResearchCenter | null>(null);
-  
+  const [search, setSearch] = useState("");
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
-  const [formState, setFormState] = useState({
-    name: "",
-    code: "",
-    description: "",
-    officeLocation: "",
-    contactEmail: "",
-    contactPhone: "",
-    coordinatorId: "",
-    status: "Active",
-  });
-
-  const [editFormState, setEditFormState] = useState({
-    name: "",
-    code: "",
-    description: "",
-    officeLocation: "",
-    contactEmail: "",
-    contactPhone: "",
-    coordinatorId: "",
-    status: "Active",
-  });
+  const [centerName, setCenterName] = useState("");
+  const [coordinatorId, setCoordinatorId] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -78,8 +55,8 @@ export default function AdminResearchCentersPage() {
         apiGet<ApiListResponse<User>>("/users"),
       ]);
 
-      setCenters(centersRes.items);
-      setAllUsers(usersRes.items);
+      setCenters(centersRes.items || []);
+      setAllUsers(usersRes.items || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -97,54 +74,24 @@ export default function AdminResearchCentersPage() {
     );
   }, [allUsers]);
 
-  const handleFormChange = (field: keyof typeof formState, value: string) => {
-    setFormState((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleEditFormChange = (field: keyof typeof editFormState, value: string) => {
-    setEditFormState((prev) => ({ ...prev, [field]: value }));
-  };
-
   const handleCreate = async () => {
+    if (!centerName.trim()) {
+      setSaveError("Research Center Name is required.");
+      return;
+    }
+
     try {
       setSaving(true);
       setSaveError(null);
-      setSaveSuccess(null);
-
-      if (!formState.name.trim()) {
-        setSaveError("Research Center Name is required.");
-        setSaving(false);
-        return;
-      }
-
-      const derivedCode = formState.name
-        .trim()
-        .toUpperCase()
-        .replace(/[^A-Z0-9]/g, "")
-        .substring(0, 10) + Math.floor(100 + Math.random() * 900);
 
       await apiPostJson("/research-centers", {
-        name: formState.name.trim(),
-        code: derivedCode,
-        description: "",
-        officeLocation: "",
-        contactEmail: undefined,
-        contactPhone: "",
-        coordinatorId: formState.coordinatorId || undefined,
+        name: centerName.trim(),
+        coordinatorId: coordinatorId || undefined,
         status: "Active",
       });
 
-      setSaveSuccess("Research Center created successfully.");
-      setFormState({
-        name: "",
-        code: "",
-        description: "",
-        officeLocation: "",
-        contactEmail: "",
-        contactPhone: "",
-        coordinatorId: "",
-        status: "Active",
-      });
+      setCenterName("");
+      setCoordinatorId("");
       setShowForm(false);
       await loadData();
     } catch (err) {
@@ -156,46 +103,30 @@ export default function AdminResearchCentersPage() {
 
   const startEdit = (center: ResearchCenter) => {
     setEditingCenter(center);
-    setEditFormState({
-      name: center.name,
-      code: center.code,
-      description: center.description || "",
-      officeLocation: center.officeLocation || "",
-      contactEmail: center.contactEmail || "",
-      contactPhone: center.contactPhone || "",
-      coordinatorId: center.coordinator?._id || "",
-      status: center.status || "Active",
-    });
+    setCenterName(center.name);
+    setCoordinatorId(center.coordinator?._id || "");
     setSaveError(null);
-    setSaveSuccess(null);
   };
 
   const handleUpdate = async () => {
     if (!editingCenter) return;
+    if (!centerName.trim()) {
+      setSaveError("Research Center Name is required.");
+      return;
+    }
+
     try {
       setSaving(true);
       setSaveError(null);
-      setSaveSuccess(null);
-
-      if (!editFormState.name.trim()) {
-        setSaveError("Research Center Name is required.");
-        setSaving(false);
-        return;
-      }
 
       await apiPatchJson(`/research-centers/${editingCenter._id}`, {
-        name: editFormState.name.trim(),
-        code: editingCenter.code,
-        description: "",
-        officeLocation: "",
-        contactEmail: undefined,
-        contactPhone: "",
-        coordinatorId: editFormState.coordinatorId || undefined,
-        status: editFormState.status,
+        name: centerName.trim(),
+        coordinatorId: coordinatorId || null,
       });
 
-      setSaveSuccess("Research Center updated successfully.");
       setEditingCenter(null);
+      setCenterName("");
+      setCoordinatorId("");
       await loadData();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to update research center");
@@ -214,12 +145,12 @@ export default function AdminResearchCentersPage() {
     }
   };
 
-  const handleDelete = async (center: ResearchCenter, facultyCount: number, scholarCount: number) => {
-    if (facultyCount > 0 || scholarCount > 0) {
+  const handleDelete = async (center: ResearchCenter, memberCount: number) => {
+    if (memberCount > 0) {
       alert("Cannot delete research center while faculty or scholars are assigned to it.");
       return;
     }
-    if (!window.confirm(`Are you sure you want to delete research center "${center.name}"?`)) {
+    if (!window.confirm(`Delete research center "${center.name}"?`)) {
       return;
     }
     try {
@@ -227,78 +158,86 @@ export default function AdminResearchCentersPage() {
       await apiDelete(`/research-centers/${center._id}`);
       await loadData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete");
+      alert(err instanceof Error ? err.message : "Failed to delete research center");
     } finally {
       setLoading(false);
     }
   };
 
+  const filteredCenters = useMemo(() => {
+    if (!search.trim()) return centers;
+    const q = search.toLowerCase();
+    return centers.filter(
+      (c) =>
+        c.name.toLowerCase().includes(q) ||
+        c.coordinator?.name?.toLowerCase().includes(q)
+    );
+  }, [centers, search]);
+
   const columns = [
-    { key: "name", label: "Centre Name" },
-    { key: "facultyCount", label: "Faculty Count" },
-    { key: "guideCount", label: "Guide Count" },
-    { key: "scholarCount", label: "Scholar Count" },
+    { key: "name", label: "Research Center" },
+    { key: "coordinator", label: "Coordinator" },
+    { key: "members", label: "Total Members" },
     { key: "status", label: "Status" },
     { key: "action", label: "Actions", align: "right" as const },
   ];
 
   const rows = useMemo(() => {
-    return centers.map((center) => {
-      const centerFaculty = allUsers.filter(
-        (u) => {
-          const rc = u.researchCenter;
-          const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-          return userCenterId === center._id && u.role === "faculty";
-        }
-      );
-      const centerGuides = allUsers.filter(
-        (u) => {
-          const rc = u.researchCenter;
-          const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-          return userCenterId === center._id &&
-            (u.role === "faculty" && u.permissions?.includes("research_guide"));
-        }
-      );
-      const centerScholars = allUsers.filter(
-        (u) => {
-          const rc = u.researchCenter;
-          const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-          return userCenterId === center._id && u.role === "scholar";
-        }
-      );
+    return filteredCenters.map((center) => {
+      const centerMembers = allUsers.filter((u) => {
+        const rc = u.researchCenter;
+        const userCenterId = rc && typeof rc === "object" ? rc._id : rc;
+        return userCenterId === center._id;
+      });
 
       return {
         id: center._id,
-        name: center.name,
-        facultyCount: centerFaculty.length,
-        guideCount: centerGuides.length,
-        scholarCount: centerScholars.length,
-        status: (
-          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-            center.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
-          }`}>
-            {center.status}
+        name: (
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-50 text-[color:var(--maroon-800)] font-bold shrink-0 border border-red-100">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div>
+              <span className="font-semibold text-slate-800 text-xs block">{center.name}</span>
+            </div>
+          </div>
+        ),
+        coordinator: (
+          <div className="flex items-center gap-2 text-xs">
+            <User className="h-3.5 w-3.5 text-slate-400" />
+            <span className={center.coordinator?.name ? "font-medium text-slate-700" : "text-slate-400 italic"}>
+              {center.coordinator?.name || "Unassigned"}
+            </span>
+          </div>
+        ),
+        members: (
+          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
+            {centerMembers.length} {centerMembers.length === 1 ? "member" : "members"}
           </span>
         ),
+        status: (
+          <button
+            onClick={() => toggleStatus(center)}
+            title="Click to toggle status"
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold cursor-pointer transition-all ${
+              center.status === "Active"
+                ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+            }`}
+          >
+            <Power className="h-3 w-3" />
+            {center.status}
+          </button>
+        ),
         action: (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end items-center gap-2">
             <Link
               href={`/admin/research-centers/${center._id}`}
-              className="rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50 transition-colors"
+              className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50 transition-colors"
             >
               Manage
+              <ChevronRight className="h-3.5 w-3.5" />
             </Link>
-            <button
-              onClick={() => toggleStatus(center)}
-              className={`rounded-full border p-1.5 text-xs font-semibold transition-colors ${
-                center.status === "Active"
-                  ? "border-amber-200 text-amber-600 hover:bg-amber-50"
-                  : "border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-              }`}
-              title={center.status === "Active" ? "Deactivate" : "Activate"}
-            >
-              <Power className="h-3.5 w-3.5" />
-            </button>
             <button
               onClick={() => startEdit(center)}
               className="rounded-full border border-slate-200 p-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
@@ -307,7 +246,7 @@ export default function AdminResearchCentersPage() {
               <Edit2 className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => handleDelete(center, centerFaculty.length, centerScholars.length)}
+              onClick={() => handleDelete(center, centerMembers.length)}
               className="rounded-full border border-red-200 p-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
               title="Delete"
             >
@@ -317,7 +256,7 @@ export default function AdminResearchCentersPage() {
         ),
       };
     });
-  }, [centers, allUsers]);
+  }, [filteredCenters, allUsers]);
 
   return (
     <PageLayout
@@ -330,28 +269,21 @@ export default function AdminResearchCentersPage() {
       <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)]">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4">
           <div>
-            <h2 className="font-display text-lg text-[color:var(--maroon-900)]">
+            <h2 className="font-display text-lg font-bold text-[color:var(--maroon-900)]">
               Research Centers
             </h2>
-            <p className="text-sm text-slate-500">
-              Create, edit, activate/deactivate, and oversee institution-wide research units.
+            <p className="text-xs text-slate-500">
+              Overview and management of institutional research centers.
             </p>
           </div>
           <button
             type="button"
             onClick={() => {
               setShowForm(true);
-              setFormState({
-                name: "",
-                code: "",
-                description: "",
-                officeLocation: "",
-                contactEmail: "",
-                contactPhone: "",
-                coordinatorId: "",
-                status: "Active",
-              });
+              setCenterName("");
+              setCoordinatorId("");
               setEditingCenter(null);
+              setSaveError(null);
             }}
             className="inline-flex items-center gap-2 rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors"
           >
@@ -360,45 +292,48 @@ export default function AdminResearchCentersPage() {
           </button>
         </div>
 
-        {/* Create Modal / Form Overlay */}
-        {showForm && (
+        {/* Create / Edit Modal Overlay */}
+        {(showForm || editingCenter) && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-scale-up">
+            <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-scale-up">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-display text-base font-bold text-[color:var(--maroon-900)]">
-                  Add Research Center
+                <h3 className="font-display text-sm font-bold text-[color:var(--maroon-900)]">
+                  {editingCenter ? "Edit Research Center" : "Add Research Center"}
                 </h3>
                 <button
-                  onClick={() => setShowForm(false)}
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingCenter(null);
+                  }}
                   className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="mt-4 space-y-4">
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="create-name">
-                    Research Center Name
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="rc-name">
+                    Center Name
                   </label>
                   <input
-                    id="create-name"
+                    id="rc-name"
                     className={inputClass}
-                    value={formState.name}
-                    onChange={(e) => handleFormChange("name", e.target.value)}
-                    placeholder="e.g. MCA Research Center"
+                    value={centerName}
+                    onChange={(e) => setCenterName(e.target.value)}
+                    placeholder="e.g. Computer Science Research Center"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="create-coordinator">
+                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="rc-coordinator">
                     Coordinator (Optional)
                   </label>
                   <select
-                    id="create-coordinator"
+                    id="rc-coordinator"
                     className={inputClass}
-                    value={formState.coordinatorId}
-                    onChange={(e) => handleFormChange("coordinatorId", e.target.value)}
+                    value={coordinatorId}
+                    onChange={(e) => setCoordinatorId(e.target.value)}
                   >
                     <option value="">Unassigned</option>
                     {coordinators.map((c) => (
@@ -410,115 +345,49 @@ export default function AdminResearchCentersPage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
+              {saveError && <p className="mt-3 text-xs text-red-600 font-medium">{saveError}</p>}
+
+              <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
-                  className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  onClick={() => {
+                    setShowForm(false);
+                    setEditingCenter(null);
+                  }}
+                  className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
-                  onClick={handleCreate}
+                  onClick={editingCenter ? handleUpdate : handleCreate}
                   disabled={saving}
-                  className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-60 hover:bg-[color:var(--maroon-950)] transition-colors"
+                  className="rounded-full bg-[color:var(--maroon-800)] px-5 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-60 hover:bg-[color:var(--maroon-950)] transition-colors"
                 >
-                  {saving ? "Creating..." : "Create Research Center"}
+                  {saving ? "Saving..." : editingCenter ? "Save Changes" : "Create Center"}
                 </button>
               </div>
-              {saveError && <p className="mt-2 text-xs text-red-600 text-right">{saveError}</p>}
-              {saveSuccess && <p className="mt-2 text-xs text-emerald-600 text-right">{saveSuccess}</p>}
-            </div>
-          </div>
-        )}
-
-        {/* Edit Modal / Form Overlay */}
-        {editingCenter && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-scale-up">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="font-display text-base font-bold text-[color:var(--maroon-900)]">
-                  Edit Research Center
-                </h3>
-                <button
-                  onClick={() => setEditingCenter(null)}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <div className="mt-4 space-y-4">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="edit-name">
-                    Research Center Name
-                  </label>
-                  <input
-                    id="edit-name"
-                    className={inputClass}
-                    value={editFormState.name}
-                    onChange={(e) => handleEditFormChange("name", e.target.value)}
-                    placeholder="Research Center Name"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="edit-coordinator">
-                    Coordinator
-                  </label>
-                  <select
-                    id="edit-coordinator"
-                    className={inputClass}
-                    value={editFormState.coordinatorId}
-                    onChange={(e) => handleEditFormChange("coordinatorId", e.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {coordinators.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} ({c.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-100 pt-4">
-                <button
-                  type="button"
-                  onClick={() => setEditingCenter(null)}
-                  className="rounded-full border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdate}
-                  disabled={saving}
-                  className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm disabled:opacity-60 hover:bg-[color:var(--maroon-950)] transition-colors"
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
-              {saveError && <p className="mt-2 text-xs text-red-600 text-right">{saveError}</p>}
             </div>
           </div>
         )}
 
         <div className="mt-4 flex flex-wrap gap-3">
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-xs text-slate-500">
+          <label className="flex flex-1 items-center gap-2 rounded-full border border-[color:var(--border)] bg-white px-4 py-2 text-xs text-slate-500">
             <Search className="h-4 w-4" />
-            <span>Search research centers...</span>
-          </div>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search research centers by name or coordinator..."
+              className="w-full bg-transparent text-slate-700 outline-none"
+            />
+          </label>
         </div>
 
         <div className="mt-4">
           {loading ? (
             <p className="text-sm text-slate-500 animate-pulse">Loading research centers...</p>
           ) : error ? (
-            <p className="text-sm text-red-600">
-              Failed to load research centers: {error}
-            </p>
+            <p className="text-sm text-red-600">Failed to load research centers: {error}</p>
           ) : (
             <DataTable columns={columns} rows={rows} />
           )}

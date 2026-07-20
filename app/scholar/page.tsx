@@ -12,11 +12,12 @@ import {
   Plus,
   Settings,
   Trash2,
+  Upload,
 } from "lucide-react";
 import { DashboardCards } from "@/components/DashboardCards";
 import { PageLayout } from "@/components/PageLayout";
 import { scholarNav } from "@/data/roleNav";
-import { apiGet, apiPatchJson, apiPostForm, apiDelete, transformGoogleDriveLink, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiPatchJson, apiPostForm, apiDelete, transformGoogleDriveLink, getUserAvatarUrl, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
@@ -122,7 +123,7 @@ export default function ScholarDashboard() {
     const userIdKey = user._id;
 
     // Load Unique ID
-    const savedId = user?.uniqueId || `MCKA-SCH-${user._id.slice(-4).toUpperCase()}`;
+    const savedId = user?.uniqueId || "";
     setUniqueId(savedId);
 
     // Load tabs config
@@ -207,18 +208,18 @@ export default function ScholarDashboard() {
     };
   }, [user?._id]);
 
-  // Synchronize Edit profile form values when modal opens
+  // Synchronize Edit profile form values and avatar on user load
   useEffect(() => {
-    if (user && showEditProfileModal) {
+    if (user) {
       setProfileName(user.name || "");
       setProfileEmail(user.email || "");
       setProfileDept(user.researchCenter?.name || user.researchCenter || "MCA");
       setProfileGuide(user.guide?.name || "");
-      setProfileAvatar(user.preferences?.scholar_avatar || "");
+      setProfileAvatar(getUserAvatarUrl(user));
       
       setProfileUniqueId(user.uniqueId || (user._id ? `MCKA-SCH-${user._id.slice(-4).toUpperCase()}` : ""));
     }
-  }, [user, showEditProfileModal]);
+  }, [user]);
 
   // Handle saving modified profile details
   // Image Upload Handler
@@ -460,26 +461,27 @@ export default function ScholarDashboard() {
       <div className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-sm mb-8">
         <div className="flex flex-col md:flex-row gap-6 items-start">
           {/* Avatar frame */}
-          <label className="w-32 h-32 md:w-36 md:h-36 relative rounded-lg overflow-hidden border border-[color:var(--border)] flex-shrink-0 bg-slate-50 flex items-center justify-center cursor-pointer group">
-            {profileAvatar ? (
-              <img
-                src={profileAvatar}
-                alt={profileName || user?.name || "Scholar"}
-                className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-bold text-3xl text-[#9B0302] bg-red-50 group-hover:bg-red-100 transition-colors">
-                {(profileName || user?.name || "SC").split(" ").map(n => n[0]).join("").substring(0, 2)}
+          {(() => {
+            const displayAvatar = profileAvatar || getUserAvatarUrl(user);
+            return (
+              <div className="w-32 h-32 md:w-36 md:h-36 relative rounded-lg overflow-hidden border border-[color:var(--border)] flex-shrink-0 bg-slate-50 flex items-center justify-center">
+                {displayAvatar ? (
+                  <img
+                    src={displayAvatar}
+                    alt={profileName || user?.name || "Scholar"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-3xl text-[#9B0302] bg-red-50">
+                    {(profileName || user?.name || "SC").split(" ").map(n => n[0]).join("").substring(0, 2)}
+                  </div>
+                )}
               </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-               <span className="bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded">Change Photo</span>
-            </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          </label>
+            );
+          })()}
           
           {/* Details */}
           <div className="flex-1 space-y-1.5 w-full">
@@ -502,7 +504,7 @@ export default function ScholarDashboard() {
             <div className="pt-2 text-xs space-y-1.5 text-slate-700 grid grid-cols-1 md:grid-cols-2 gap-x-4">
               <div>
                 <span className="font-semibold text-slate-500">Unique ID : </span>
-                <span className="font-bold text-slate-800">{uniqueId}</span>
+                <span className="font-bold text-slate-800">{uniqueId || "Not set"}</span>
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Research Center : </span>
@@ -725,14 +727,44 @@ export default function ScholarDashboard() {
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Photo URL (Optional)</label>
-                <input
-                  type="text"
-                  value={profileAvatar}
-                  onChange={(e) => setProfileAvatar(transformGoogleDriveLink(e.target.value))}
-                  placeholder="You can also click your avatar directly to upload a file"
-                  className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
-                />
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Profile Picture Link</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-[color:var(--border)] bg-slate-50 flex items-center justify-center flex-shrink-0">
+                    {profileAvatar ? (
+                      <img
+                        src={profileAvatar}
+                        alt={profileName || user?.name || "Scholar"}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[#9B0302] bg-red-50">
+                        {(profileName || user?.name || "SC").split(" ").map(n => n[0]).join("").substring(0, 2)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={profileAvatar}
+                      onChange={(e) => setProfileAvatar(transformGoogleDriveLink(e.target.value))}
+                      placeholder="Paste image / Google Drive URL here"
+                      className="w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
+                    />
+                    {profileAvatar ? (
+                      <button
+                        type="button"
+                        onClick={() => setProfileAvatar("")}
+                        className="mt-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition inline-flex items-center gap-1.5"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Remove Photo Link</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
               
               <div className="pt-4 border-t border-[color:var(--border)] space-y-3">

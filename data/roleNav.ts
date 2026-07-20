@@ -4,6 +4,7 @@ import {
   ClipboardCheck,
   FileText,
   LayoutDashboard,
+  Lock,
   NotebookText,
   Settings,
   User,
@@ -27,6 +28,17 @@ export const facultyNav: NavItem[] = [
   { label: "Incentives", icon: Coins, href: "/faculty/incentives" },
 ];
 
+export function getFacultyNav(permissions?: string[]): NavItem[] {
+  const items: NavItem[] = [...facultyNav];
+  if (permissions?.includes("research_guide")) {
+    items.push({ label: "Leave Reviews", icon: Calendar, href: "/faculty/leave-reviews" });
+  }
+  if (permissions?.includes("coordinator")) {
+    items.push({ label: "Center Leaves", icon: Calendar, href: "/faculty/leaves" });
+  }
+  return items;
+}
+
 export const researchGuideNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/research-guide" },
   { label: "Scholars", icon: Users, href: "/research-guide/scholars" },
@@ -41,14 +53,13 @@ export const researchGuideNav: NavItem[] = [
 
 export const adminNav: NavItem[] = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/admin" },
-  { label: "Users", icon: Users, href: "/admin/users" },
   { label: "Research Centers", icon: Building2, href: "/admin/research-centers" },
   { label: "Submissions", icon: FileText, href: "/admin/submissions" },
   { label: "Scholar Portfolios", icon: Award, href: "/admin/portfolios" },
   { label: "Overall Leaves", icon: Calendar, href: "/admin/leaves" },
   { label: "Reports", icon: NotebookText, href: "/admin/reports" },
   { label: "Incentives", icon: Coins, href: "/admin/incentives" },
-  { label: "Settings", icon: Settings, href: "/admin/settings" },
+  { label: "Change Password", icon: Lock, href: "/admin/settings" },
 ];
 
 export const coordinatorNav: NavItem[] = [

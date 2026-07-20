@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, Mail, Phone, MapPin, User, Info, FileText } from "lucide-react";
+import { ArrowLeft, Building2, User, FileText, Award, GraduationCap, Users } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
 import { useAuth } from "@/components/AuthProvider";
+import { ProfileImageModal, type ProfileUser } from "@/components/ProfileImageModal";
 import {
   apiGet,
   apiPatchJson,
@@ -20,10 +21,6 @@ type ResearchCenter = {
   _id: string;
   name: string;
   code: string;
-  description?: string;
-  officeLocation?: string;
-  contactEmail?: string;
-  contactPhone?: string;
   status: string;
   coordinator?: { _id?: string; name?: string; email?: string } | null;
 };
@@ -36,6 +33,9 @@ type User = {
   roles?: string[];
   permissions?: string[];
   status?: string;
+  avatar?: string;
+  preferences?: any;
+  department?: string;
   researchCenter?: { _id: string; name: string } | string | null;
   guide?: { _id?: string; name?: string } | null;
 };
@@ -49,19 +49,25 @@ type Submission = {
 };
 
 const inputClass =
-  "mt-2 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all";
+  "mt-1.5 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302]";
 
 const facultyColumns = [
+  { key: "avatar", label: "Photo" },
   { key: "name", label: "Faculty Member" },
   { key: "email", label: "Email" },
+  { key: "guideStatus", label: "Guide Status" },
+  { key: "action", label: "Actions", align: "right" as const },
 ];
 
 const guideColumns = [
+  { key: "avatar", label: "Photo" },
   { key: "name", label: "Research Guide" },
   { key: "email", label: "Email" },
+  { key: "action", label: "Actions", align: "right" as const },
 ];
 
 const scholarColumns = [
+  { key: "avatar", label: "Photo" },
   { key: "name", label: "Scholar" },
   { key: "email", label: "Email" },
   { key: "guide", label: "Research Guide" },
@@ -101,11 +107,14 @@ export default function AdminResearchCenterDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"members" | "submissions" | "assign">("members");
+  const [memberRoleSubTab, setMemberRoleSubTab] = useState<"faculty" | "guides" | "scholars">("faculty");
+  const [selectedProfileUser, setSelectedProfileUser] = useState<ProfileUser | null>(null);
 
   const [formState, setFormState] = useState({
     coordinatorId: "",
-    guideId: "",
     facultyId: "",
+    guideId: "",
     scholarId: "",
     scholarGuideId: "",
   });
@@ -123,15 +132,15 @@ export default function AdminResearchCenterDetailsPage() {
       ]);
 
       setCenter(centerRes.item);
-      setAllUsers(usersRes.items);
-      setSubmissions(submissionsRes.items);
+      setAllUsers(usersRes.items || []);
+      setSubmissions(submissionsRes.items || []);
       
       setFormState((prev) => ({
         ...prev,
         coordinatorId: centerRes.item.coordinator?._id ?? "",
       }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load research center details");
+      setError(err instanceof Error ? err.message : "Failed to load details");
     } finally {
       setLoading(false);
     }
@@ -141,12 +150,16 @@ export default function AdminResearchCenterDetailsPage() {
     loadData();
   }, [loadData]);
 
-  // Filter lists based on assigned researchCenter ID
   const faculty = useMemo(() => {
     return allUsers.filter((u) => {
       const rc = u.researchCenter;
       const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      return userCenterId === centerId && u.role === "faculty";
+      const isFacultyOrGuide =
+        u.role === "faculty" ||
+        u.role === "research_guide" ||
+        u.roles?.includes("faculty") ||
+        u.roles?.includes("research_guide");
+      return userCenterId === centerId && isFacultyOrGuide;
     });
   }, [allUsers, centerId]);
 
@@ -154,8 +167,11 @@ export default function AdminResearchCenterDetailsPage() {
     return allUsers.filter((u) => {
       const rc = u.researchCenter;
       const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      return userCenterId === centerId &&
-        (u.role === "faculty" && u.permissions?.includes("research_guide"));
+      const isGuide =
+        u.permissions?.includes("research_guide") ||
+        u.role === "research_guide" ||
+        u.roles?.includes("research_guide");
+      return userCenterId === centerId && isGuide;
     });
   }, [allUsers, centerId]);
 
@@ -178,10 +194,9 @@ export default function AdminResearchCenterDetailsPage() {
     });
   }, [submissions, allUsers, centerId]);
 
-  // Candidate dropdown lists for assigning
   const coordinators = useMemo(() => {
     return allUsers.filter((u) =>
-      u.role === "faculty" && u.permissions?.includes("coordinator")
+      (u.role === "faculty" || u.roles?.includes("faculty")) && u.permissions?.includes("coordinator")
     );
   }, [allUsers]);
 
@@ -189,7 +204,13 @@ export default function AdminResearchCenterDetailsPage() {
     return allUsers.filter((u) => {
       const rc = u.researchCenter;
       const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      return (u.role === "faculty" || u.roles?.includes("faculty")) && userCenterId !== centerId;
+      const isFacultyOrGuide =
+        u.role === "faculty" ||
+        u.role === "research_guide" ||
+        u.roles?.includes("faculty") ||
+        u.roles?.includes("research_guide") ||
+        u.permissions?.includes("research_guide");
+      return isFacultyOrGuide && userCenterId !== centerId;
     });
   }, [allUsers, centerId]);
 
@@ -197,8 +218,12 @@ export default function AdminResearchCenterDetailsPage() {
     return allUsers.filter((u) => {
       const rc = u.researchCenter;
       const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      const isGuide = u.permissions?.includes("research_guide");
-      return u.role === "faculty" && userCenterId === centerId && !isGuide;
+      const isFacultyOrGuide =
+        u.role === "faculty" ||
+        u.role === "research_guide" ||
+        u.roles?.includes("faculty") ||
+        u.roles?.includes("research_guide");
+      return isFacultyOrGuide && userCenterId === centerId;
     });
   }, [allUsers, centerId]);
 
@@ -210,90 +235,90 @@ export default function AdminResearchCenterDetailsPage() {
     });
   }, [allUsers, centerId]);
 
-  const handleCoordinatorAssign = async () => {
-    if (!centerId) return;
-    try {
-      setSaving(true);
-      setSaveMessage(null);
-      await apiPatchJson(`/research-centers/${centerId}`, {
-        coordinatorId: formState.coordinatorId || null,
-      });
-      await loadData();
-      setSaveMessage("Coordinator assigned successfully.");
-    } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to assign coordinator");
-    } finally {
-      setSaving(false);
-    }
-  };
+  const scholarDropdownCandidates = useMemo(() => {
+    const centerScholarIds = new Set(scholars.map((s) => s._id));
+    return [
+      ...scholars,
+      ...scholarCandidates.filter((s) => !centerScholarIds.has(s._id)),
+    ];
+  }, [scholars, scholarCandidates]);
 
   const handleFacultyAssign = async () => {
-    if (!centerId || !center) return;
-    if (!formState.facultyId) {
-      setSaveMessage("Select a faculty member to assign.");
-      return;
-    }
+    if (!centerId || !formState.facultyId) return;
     try {
       setSaving(true);
       setSaveMessage(null);
-      await apiPatchJson(`/users/${formState.facultyId}`, {
-        researchCenterId: centerId,
-      });
+      await apiPatchJson(`/users/${formState.facultyId}`, { researchCenterId: centerId });
       await loadData();
-      setSaveMessage("Faculty assigned to center successfully.");
+      setSaveMessage("Faculty / Guide assigned to center.");
     } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to assign faculty");
+      setSaveMessage(err instanceof Error ? err.message : "Failed to assign member to center");
     } finally {
       setSaving(false);
     }
   };
 
-  const handleGuideAssign = async () => {
-    if (!centerId || !center) return;
-    if (!formState.guideId) {
-      setSaveMessage("Select a guide candidate to assign.");
-      return;
-    }
-
-    const guide = allUsers.find((item) => item._id === formState.guideId);
-    if (!guide) {
-      setSaveMessage("Selected guide candidate not found.");
-      return;
-    }
-
-    const nextPermissions = Array.from(new Set([...(guide.permissions || []), "research_guide"]));
-
+  const handleGrantGuideRole = async (targetUser: User) => {
+    if (!targetUser) return;
     try {
       setSaving(true);
       setSaveMessage(null);
-      await apiPatchJson(`/users/${guide._id}`, {
-        researchCenterId: centerId,
-        permissions: nextPermissions,
+      const nextPerms = Array.from(new Set([...(targetUser.permissions || []), "research_guide"]));
+      await apiPatchJson(`/users/${targetUser._id}`, { permissions: nextPerms });
+      await loadData();
+      setSaveMessage(`Granted Research Guide privilege to ${targetUser.name}.`);
+    } catch (err) {
+      setSaveMessage(err instanceof Error ? err.message : "Failed to grant guide privilege");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRevokeGuideRole = async (targetUser: User) => {
+    if (!targetUser) return;
+    try {
+      setSaving(true);
+      setSaveMessage(null);
+      const nextPerms = (targetUser.permissions || []).filter((p) => p !== "research_guide");
+      const nextRoles = (targetUser.roles || []).filter((r) => r !== "research_guide");
+      if (!nextRoles.includes("faculty")) nextRoles.push("faculty");
+      await apiPatchJson(`/users/${targetUser._id}`, {
+        permissions: nextPerms,
+        role: "faculty",
+        roles: nextRoles,
       });
       await loadData();
-      setSaveMessage("Research guide permissions assigned successfully.");
+      setSaveMessage(`Removed Research Guide privilege from ${targetUser.name}.`);
     } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to assign research guide");
+      setSaveMessage(err instanceof Error ? err.message : "Failed to revoke guide privilege");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRemoveFromCenter = async (targetUser: User) => {
+    if (!window.confirm(`Remove ${targetUser.name} from ${center?.name || "this Research Center"}?`)) return;
+    try {
+      setSaving(true);
+      setSaveMessage(null);
+      await apiPatchJson(`/users/${targetUser._id}`, { researchCenterId: null });
+      await loadData();
+      setSaveMessage(`${targetUser.name} removed from Research Center.`);
+    } catch (err) {
+      setSaveMessage(err instanceof Error ? err.message : "Failed to remove user from center");
     } finally {
       setSaving(false);
     }
   };
 
   const handleScholarAssign = async () => {
-    if (!centerId || !center) return;
-    if (!formState.scholarId || !formState.scholarGuideId) {
-      setSaveMessage("Select both a scholar and a guide.");
-      return;
-    }
-
+    if (!centerId || !formState.scholarId || !formState.scholarGuideId) return;
     try {
       setSaving(true);
       setSaveMessage(null);
-      await apiPatchJson(`/users/${formState.scholarId}`, {
-        guideId: formState.scholarGuideId,
-      });
+      await apiPatchJson(`/users/${formState.scholarId}`, { guideId: formState.scholarGuideId });
       await loadData();
-      setSaveMessage("Scholar guide assignment completed successfully.");
+      setSaveMessage("Scholar assigned to guide.");
     } catch (err) {
       setSaveMessage(err instanceof Error ? err.message : "Failed to assign scholar");
     } finally {
@@ -301,50 +326,134 @@ export default function AdminResearchCenterDetailsPage() {
     }
   };
 
+  const renderAvatarCell = (u: User) => {
+    const avatarUrl = u.avatar || u.preferences?.scholar_avatar || u.preferences?.faculty_avatar || u.preferences?.research_guide_avatar;
+    return (
+      <div
+        onClick={() =>
+          setSelectedProfileUser({
+            name: u.name,
+            email: u.email,
+            role: u.role,
+            roles: u.roles,
+            avatar: avatarUrl,
+            department: u.department,
+            researchCenter: center?.name,
+          })
+        }
+        className="w-8 h-8 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200 shrink-0 cursor-pointer hover:ring-2 hover:ring-[color:var(--maroon-700)] hover:scale-105 transition-all shadow-sm"
+        title="Click to view profile photo"
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={u.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-[10px] font-bold text-slate-500">{u.name.substring(0, 2).toUpperCase()}</span>
+        )}
+      </div>
+    );
+  };
+
   const facultyRows = useMemo(
     () =>
-      faculty.map((f) => ({
-        id: f._id,
-        name: f.name,
-        email: f.email,
-      })),
-    [faculty]
+      faculty.map((f) => {
+        const isGuide = f.permissions?.includes("research_guide") || f.role === "research_guide" || f.roles?.includes("research_guide");
+        return {
+          id: f._id,
+          avatar: renderAvatarCell(f),
+          name: f.name,
+          email: f.email,
+          guideStatus: (
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${isGuide ? "bg-purple-50 text-purple-700 border border-purple-200" : "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+              {isGuide ? "Research Guide" : "Standard Faculty"}
+            </span>
+          ),
+          action: (
+            <div className="flex items-center justify-end gap-1.5">
+              {isGuide ? (
+                <button
+                  onClick={() => handleRevokeGuideRole(f)}
+                  disabled={saving}
+                  className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+                  title="Remove Research Guide Privilege"
+                >
+                  Revoke Guide
+                </button>
+              ) : (
+                <button
+                  onClick={() => handleGrantGuideRole(f)}
+                  disabled={saving}
+                  className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-100 transition disabled:opacity-50"
+                  title="Grant Research Guide Privilege"
+                >
+                  Grant Guide
+                </button>
+              )}
+              <button
+                onClick={() => handleRemoveFromCenter(f)}
+                disabled={saving}
+                className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                title="Remove from this Research Center"
+              >
+                Remove
+              </button>
+            </div>
+          ),
+        };
+      }),
+    [faculty, center, saving]
   );
-
   const guideRows = useMemo(
     () =>
       guides.map((g) => ({
         id: g._id,
+        avatar: renderAvatarCell(g),
         name: g.name,
         email: g.email,
+        action: (
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => handleRevokeGuideRole(g)}
+              disabled={saving}
+              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
+              title="Remove Research Guide Privilege"
+            >
+              Revoke Guide
+            </button>
+            <button
+              onClick={() => handleRemoveFromCenter(g)}
+              disabled={saving}
+              className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+              title="Remove from this Research Center"
+            >
+              Remove
+            </button>
+          </div>
+        ),
       })),
-    [guides]
+    [guides, center, saving]
   );
-
   const scholarRows = useMemo(
     () =>
       scholars.map((s) => ({
         id: s._id,
+        avatar: renderAvatarCell(s),
         name: s.name,
         email: s.email,
         guide: s.guide?.name ?? "Unassigned",
         status: <StatusBadge status={s.status ?? "Active"} />,
       })),
-    [scholars]
+    [scholars, center]
   );
-
   const submissionRows = useMemo(
     () =>
-      filteredSubmissions.map((submission) => {
-        const scholarObj = allUsers.find(
-          (u) => u._id === (submission.scholar?._id || (submission.scholar as unknown as string))
-        );
+      filteredSubmissions.map((sub) => {
+        const scholarObj = allUsers.find((u) => u._id === (sub.scholar?._id || (sub.scholar as unknown as string)));
         return {
-          id: submission._id,
-          title: submission.title,
+          id: sub._id,
+          title: sub.title,
           scholar: scholarObj?.name ?? "Unknown",
-          submitted: formatDate(submission.submittedAt),
-          status: <StatusBadge status={submission.status} />,
+          submitted: formatDate(sub.submittedAt),
+          status: <StatusBadge status={sub.status} />,
         };
       }),
     [filteredSubmissions, allUsers]
@@ -352,7 +461,7 @@ export default function AdminResearchCenterDetailsPage() {
 
   return (
     <PageLayout
-      title="Research Center details"
+      title="Research Center Overview"
       userName={currentUser?.name || "Admin"}
       roleLabel="Administrator"
       navItems={adminNav}
@@ -361,272 +470,243 @@ export default function AdminResearchCenterDetailsPage() {
       <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)]">
         <Link
           href="/admin/research-centers"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-[color:var(--maroon-700)] hover:underline"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[color:var(--maroon-700)] hover:underline"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Research Centers
         </Link>
         
         {loading ? (
-          <p className="mt-4 text-sm text-slate-500 animate-pulse">Loading research center details...</p>
+          <p className="mt-4 text-sm text-slate-500 animate-pulse">Loading center details...</p>
         ) : error ? (
           <p className="mt-4 text-sm text-red-600">{error}</p>
         ) : center ? (
           <div className="mt-4 space-y-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[color:var(--maroon-700)]">
-                Research Center
-              </p>
-              <h2 className="mt-2 font-display text-2xl font-bold text-[color:var(--maroon-900)]">
-                {center.name} ({center.code})
-              </h2>
-              {center.description && (
-                <p className="mt-2 text-sm text-slate-600 leading-relaxed bg-slate-50 border border-slate-100 rounded-xl p-4 max-w-3xl">
-                  {center.description}
-                </p>
-              )}
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="rounded-xl border border-slate-100 p-4 space-y-3 shadow-sm bg-slate-50/50">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Details</h3>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <User className="h-4 w-4 text-[color:var(--maroon-700)]" />
-                  <span>Coordinator: <strong className="text-slate-800">{center.coordinator?.name || "Unassigned"}</strong></span>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-[color:var(--maroon-800)] font-bold border border-red-100">
+                  <Building2 className="h-6 w-6" />
                 </div>
-
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <Info className="h-4 w-4 text-[color:var(--maroon-700)]" />
-                  <span>Status: 
-                    <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                      center.status === "Active" ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"
-                    }`}>
+                <div>
+                  <h2 className="font-display text-xl font-bold text-[color:var(--maroon-900)]">
+                    {center.name}
+                  </h2>
+                  <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                    <span>Coordinator: <strong className="text-slate-700">{center.coordinator?.name || "Unassigned"}</strong></span>
+                    <span>•</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${center.status === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
                       {center.status}
                     </span>
-                  </span>
+                  </p>
                 </div>
-              </div>
-
-              <div className="rounded-xl border border-slate-100 p-4 space-y-3 shadow-sm bg-slate-50/50">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Contact & Office</h3>
-                {center.officeLocation && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <MapPin className="h-4 w-4 text-[color:var(--maroon-700)]" />
-                    <span>Location: <strong className="text-slate-800">{center.officeLocation}</strong></span>
-                  </div>
-                )}
-                {center.contactEmail && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Mail className="h-4 w-4 text-[color:var(--maroon-700)]" />
-                    <span>Email: <a href={`mailto:${center.contactEmail}`} className="text-[color:var(--maroon-700)] hover:underline font-semibold">{center.contactEmail}</a></span>
-                  </div>
-                )}
-                {center.contactPhone && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Phone className="h-4 w-4 text-[color:var(--maroon-700)]" />
-                    <span>Phone: <strong className="text-slate-800">{center.contactPhone}</strong></span>
-                  </div>
-                )}
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Assign / Update Coordinator
-                </p>
-                <div className="mt-3 grid gap-3 grid-cols-[2fr_1fr]">
-                  <select
-                    className={inputClass}
-                    value={formState.coordinatorId}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        coordinatorId: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Select Coordinator</option>
-                    {coordinators.map((coordinator) => (
-                      <option key={coordinator._id} value={coordinator._id}>
-                        {coordinator.name} ({coordinator.email})
-                      </option>
-                    ))}
-                  </select>
+            {/* Quick Stats Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Faculty</span>
+                <span className="text-2xl font-bold text-slate-800 mt-1 block">{faculty.length}</span>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Guides</span>
+                <span className="text-2xl font-bold text-slate-800 mt-1 block">{guides.length}</span>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Scholars</span>
+                <span className="text-2xl font-bold text-slate-800 mt-1 block">{scholars.length}</span>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-4">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Submissions</span>
+                <span className="text-2xl font-bold text-slate-800 mt-1 block">{filteredSubmissions.length}</span>
+              </div>
+            </div>
+
+            {/* Main Section Navigation Tabs */}
+            <div className="flex border-b border-slate-200 gap-6 text-xs font-semibold text-slate-500">
+              <button
+                onClick={() => setActiveTab("members")}
+                className={`pb-3 transition-colors border-b-2 ${activeTab === "members" ? "border-[color:var(--maroon-800)] text-[color:var(--maroon-900)] font-bold" : "border-transparent hover:text-slate-700"}`}
+              >
+                Members ({faculty.length + scholars.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("submissions")}
+                className={`pb-3 transition-colors border-b-2 ${activeTab === "submissions" ? "border-[color:var(--maroon-800)] text-[color:var(--maroon-900)] font-bold" : "border-transparent hover:text-slate-700"}`}
+              >
+                Submissions ({filteredSubmissions.length})
+              </button>
+              <button
+                onClick={() => setActiveTab("assign")}
+                className={`pb-3 transition-colors border-b-2 ${activeTab === "assign" ? "border-[color:var(--maroon-800)] text-[color:var(--maroon-900)] font-bold" : "border-transparent hover:text-slate-700"}`}
+              >
+                Assign / Manage Roles
+              </button>
+            </div>
+
+            {/* Tab 1: Members */}
+            {activeTab === "members" && (
+              <div className="space-y-4">
+                <div className="flex gap-2">
                   <button
-                    type="button"
-                    onClick={handleCoordinatorAssign}
-                    disabled={saving}
-                    className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors disabled:opacity-60"
+                    onClick={() => setMemberRoleSubTab("faculty")}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${memberRoleSubTab === "faculty" ? "bg-[color:var(--maroon-800)] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
                   >
-                    {saving ? "Saving..." : "Assign"}
+                    Faculty ({faculty.length})
+                  </button>
+                  <button
+                    onClick={() => setMemberRoleSubTab("guides")}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${memberRoleSubTab === "guides" ? "bg-[color:var(--maroon-800)] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                  >
+                    Guides ({guides.length})
+                  </button>
+                  <button
+                    onClick={() => setMemberRoleSubTab("scholars")}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold ${memberRoleSubTab === "scholars" ? "bg-[color:var(--maroon-800)] text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                  >
+                    Scholars ({scholars.length})
                   </button>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Assign Faculty Member to Centre
-                </p>
-                <div className="mt-3 grid gap-3 grid-cols-[2fr_1fr]">
+                {memberRoleSubTab === "faculty" && <DataTable columns={facultyColumns} rows={facultyRows} />}
+                {memberRoleSubTab === "guides" && <DataTable columns={guideColumns} rows={guideRows} />}
+                {memberRoleSubTab === "scholars" && <DataTable columns={scholarColumns} rows={scholarRows} />}
+              </div>
+            )}
+
+            {/* Tab 2: Submissions */}
+            {activeTab === "submissions" && (
+              <div>
+                <DataTable columns={submissionColumns} rows={submissionRows} />
+              </div>
+            )}
+
+            {/* Tab 3: Assign Roles */}
+            {activeTab === "assign" && (
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Assign Faculty / Guide to Center</h4>
                   <select
                     className={inputClass}
                     value={formState.facultyId}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        facultyId: event.target.value,
-                      }))
-                    }
+                    onChange={(e) => setFormState((prev) => ({ ...prev, facultyId: e.target.value }))}
                   >
-                    <option value="">Select Faculty</option>
-                    {facultyCandidates.map((f) => (
-                      <option key={f._id} value={f._id}>
-                        {f.name} ({f.email})
-                      </option>
-                    ))}
+                    <option value="">Select Faculty or Guide</option>
+                    {facultyCandidates.map((f) => {
+                      const isGuideRole = f.permissions?.includes("research_guide") || f.role === "research_guide" || f.roles?.includes("research_guide");
+                      return (
+                        <option key={f._id} value={f._id}>
+                          {f.name} {isGuideRole ? "(Research Guide)" : "(Faculty)"}
+                        </option>
+                      );
+                    })}
                   </select>
                   <button
-                    type="button"
                     onClick={handleFacultyAssign}
                     disabled={saving}
-                    className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors disabled:opacity-60"
+                    className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-60"
                   >
-                    {saving ? "Saving..." : "Assign"}
+                    Assign to Center
                   </button>
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Assign Research Guide Role
-                </p>
-                <div className="mt-3 grid gap-3 grid-cols-[2fr_1fr]">
+                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Manage Research Guide Privilege</h4>
                   <select
                     className={inputClass}
                     value={formState.guideId}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        guideId: event.target.value,
-                      }))
-                    }
+                    onChange={(e) => setFormState((prev) => ({ ...prev, guideId: e.target.value }))}
                   >
-                    <option value="">Select Faculty inside Centre</option>
-                    {guideCandidates.map((guide) => (
-                      <option key={guide._id} value={guide._id}>
-                        {guide.name}
-                      </option>
-                    ))}
+                    <option value="">Select Faculty or Guide in Center</option>
+                    {guideCandidates.map((g) => {
+                      const isGuide = g.permissions?.includes("research_guide") || g.role === "research_guide" || g.roles?.includes("research_guide");
+                      return (
+                        <option key={g._id} value={g._id}>
+                          {g.name} {isGuide ? "(Current Guide)" : "(Standard Faculty)"}
+                        </option>
+                      );
+                    })}
                   </select>
-                  <button
-                    type="button"
-                    onClick={handleGuideAssign}
-                    disabled={saving}
-                    className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors disabled:opacity-60"
-                  >
-                    {saving ? "Saving..." : "Assign"}
-                  </button>
+                  {(() => {
+                    const selectedGuideUser = allUsers.find((u) => u._id === formState.guideId);
+                    if (!selectedGuideUser) {
+                      return (
+                        <button
+                          disabled
+                          className="w-full rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed opacity-70"
+                        >
+                          Select Member to Manage Privilege
+                        </button>
+                      );
+                    }
+                    const isAlreadyGuide =
+                      selectedGuideUser.permissions?.includes("research_guide") ||
+                      selectedGuideUser.role === "research_guide" ||
+                      selectedGuideUser.roles?.includes("research_guide");
+                    return isAlreadyGuide ? (
+                      <button
+                        onClick={() => handleRevokeGuideRole(selectedGuideUser)}
+                        disabled={saving}
+                        className="w-full rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition disabled:opacity-60"
+                      >
+                        Revoke Guide Privilege
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleGrantGuideRole(selectedGuideUser)}
+                        disabled={saving}
+                        className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-60"
+                      >
+                        Grant Guide Privilege
+                      </button>
+                    );
+                  })()}
                 </div>
-              </div>
 
-              <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--muted)] p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Assign Scholar to Guide
-                </p>
-                <div className="mt-3 grid gap-3 grid-cols-[2fr_2fr_1fr]">
+                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Assign Scholar to Guide</h4>
                   <select
                     className={inputClass}
                     value={formState.scholarId}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        scholarId: event.target.value,
-                      }))
-                    }
+                    onChange={(e) => setFormState((prev) => ({ ...prev, scholarId: e.target.value }))}
                   >
                     <option value="">Select Scholar</option>
-                    {scholarCandidates.map((scholar) => (
-                      <option key={scholar._id} value={scholar._id}>
-                        {scholar.name}
-                      </option>
+                    {scholarDropdownCandidates.map((s) => (
+                      <option key={s._id} value={s._id}>{s.name}</option>
                     ))}
                   </select>
                   <select
                     className={inputClass}
                     value={formState.scholarGuideId}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        scholarGuideId: event.target.value,
-                      }))
-                    }
+                    onChange={(e) => setFormState((prev) => ({ ...prev, scholarGuideId: e.target.value }))}
                   >
                     <option value="">Select Guide</option>
-                    {guides.map((guide) => (
-                      <option key={guide._id} value={guide._id}>
-                        {guide.name}
-                      </option>
+                    {guides.map((g) => (
+                      <option key={g._id} value={g._id}>{g.name}</option>
                     ))}
                   </select>
                   <button
-                    type="button"
                     onClick={handleScholarAssign}
                     disabled={saving}
-                    className="rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors disabled:opacity-60"
+                    className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-60"
                   >
-                    {saving ? "Saving..." : "Assign"}
+                    Link Scholar to Guide
                   </button>
                 </div>
-              </div>
-            </div>
 
-            {saveMessage && (
-              <p className="text-xs font-medium text-[color:var(--maroon-850)]">{saveMessage}</p>
+                {saveMessage && (
+                  <p className="col-span-full text-xs font-medium text-emerald-600 mt-2">{saveMessage}</p>
+                )}
+              </div>
             )}
           </div>
         ) : null}
       </section>
-
-      {center && (
-        <>
-          <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)] mt-6">
-            <h3 className="font-display text-lg font-bold text-[color:var(--maroon-900)]">
-              Assigned Faculty ({faculty.length})
-            </h3>
-            <div className="mt-4">
-              <DataTable columns={facultyColumns} rows={facultyRows} />
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)] mt-6">
-            <h3 className="font-display text-lg font-bold text-[color:var(--maroon-900)]">
-              Research Guides ({guides.length})
-            </h3>
-            <div className="mt-4">
-              <DataTable columns={guideColumns} rows={guideRows} />
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)] mt-6">
-            <h3 className="font-display text-lg font-bold text-[color:var(--maroon-900)]">
-              Scholars ({scholars.length})
-            </h3>
-            <div className="mt-4">
-              <DataTable columns={scholarColumns} rows={scholarRows} />
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-[0_14px_28px_rgba(91,11,22,0.08)] mt-6">
-            <h3 className="font-display text-lg font-bold text-[color:var(--maroon-900)]">
-              Submissions ({filteredSubmissions.length})
-            </h3>
-            <div className="mt-4">
-              <DataTable columns={submissionColumns} rows={submissionRows} />
-            </div>
-          </section>
-        </>
-      )}
+      <ProfileImageModal
+        isOpen={!!selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
+        user={selectedProfileUser}
+      />
     </PageLayout>
   );
 }

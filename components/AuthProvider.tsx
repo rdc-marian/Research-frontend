@@ -3,7 +3,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { apiGet, apiPostJson } from "@/lib/api";
 import { usePathname, useRouter } from "next/navigation";
-import Cookies from "js-cookie";
 
 export interface User {
   _id: string;
@@ -21,6 +20,7 @@ export interface User {
   academicYear?: string;
   preferences?: any;
   permissions?: string[];
+  department?: string;
 }
 
 interface AuthContextType {
@@ -71,34 +71,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Listen for global auth errors triggered by any API call
+  useEffect(() => {
+    const handleAuthError = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const msg = customEvent.detail?.message || "Session expired";
+      
+      // We only care about actual authentication/authorization drops
+      if (
+        msg === "Authentication required" || 
+        msg === "Invalid or expired token" ||
+        msg === "User not found" ||
+        msg.includes("401") ||
+        msg.includes("404")
+      ) {
+        setUser(null);
+        
+        const isProtected = ["/admin", "/faculty", "/scholar", "/library"].some(
+          (prefix) => pathname.startsWith(prefix)
+        );
+        if (isProtected) {
+          router.push("/?error=" + encodeURIComponent("Your session has expired. Please log in again."));
+        }
+      }
+    };
+
+    window.addEventListener("auth-error", handleAuthError);
+    return () => window.removeEventListener("auth-error", handleAuthError);
+  }, [pathname, router]);
+
   useEffect(() => {
     let isMounted = true;
     const initAuth = async () => {
       try {
         if (isMounted) setLoading(true);
 
-        // Pre-check: If no token exists in cookies or localStorage, user is definitely not logged in.
-        // We can skip the API call entirely to prevent unnecessary 401 console logs and network traffic.
-        let token = typeof window !== "undefined" ? Cookies.get("token") : undefined;
-        if (!token && typeof window !== "undefined") {
-          token = localStorage.getItem("token") || undefined;
-        }
-
-        if (!token) {
-          if (isMounted) {
-            setUser(null);
-            setLoading(false);
-          }
-          const isProtected = ["/admin", "/faculty", "/scholar", "/library"].some(
-            (prefix) => pathname.startsWith(prefix)
-          );
-          if (isProtected) {
-            router.push("/");
-          }
-          return;
-        }
-        
         // Fetch current user from backend auth/me
+        // The browser will automatically include the HttpOnly cookie if it exists.
         const res = await apiGet<{ item?: User; user?: User }>("/auth/me");
         if (!isMounted) return;
 
@@ -107,17 +116,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (resolvedUser) {
           setUser(resolvedUser);
           syncUserToLocalStorage(resolvedUser);
-
-          // Restore cookies/localStorage bidirectionally if one is missing
-          if (typeof window !== "undefined") {
-            const cookieToken = Cookies.get("token");
-            const localToken = localStorage.getItem("token");
-            if (cookieToken && !localToken) {
-              localStorage.setItem("token", cookieToken);
-            } else if (localToken && !cookieToken) {
-              Cookies.set("token", localToken, { expires: 1, secure: true, sameSite: "lax" });
-            }
-          }
 
           // Force redirect if password change is required
           if (resolvedUser.requirePasswordChange) {
@@ -144,10 +142,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         } else {
           setUser(null);
-          Cookies.remove("token");
-          if (typeof window !== "undefined") {
-            localStorage.removeItem("token");
-          }
           const isProtected = ["/admin", "/faculty", "/scholar", "/library"].some(
             (prefix) => pathname.startsWith(prefix)
           );
@@ -156,12 +150,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }
         }
       } catch (error: any) {
-        // Distinguish between authentic authentication failures (401 status) and other errors (network timeouts, 502, 503)
+        // Distinguish between authentic authentication failures (401/404 status) and other errors (network timeouts, 502, 503)
         const isAuthError = 
           error?.message === "Authentication required" || 
           error?.message === "Invalid or expired token" ||
+          error?.message === "User not found" ||
           error?.message?.includes("status: 401") ||
-          error?.message?.includes("401");
+          error?.message?.includes("status: 404") ||
+          error?.message?.includes("401") ||
+          error?.message?.includes("404");
 
         if (!isAuthError) {
           console.error("Auto-auth resolution failed due to network/server timeout:", error);
@@ -170,18 +167,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           return;
         }
 
-        // Suppress expected guest/expired 401 errors from creating scary red console error logs
-        if (error?.message !== "Authentication required" && error?.message !== "Invalid or expired token") {
-          console.error("Auto-auth resolution failed (auth error):", error);
-        }
-
         if (isMounted) setUser(null);
-        Cookies.remove("token");
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("token");
-        }
         
-          const isProtected = ["/admin", "/faculty", "/scholar", "/library"].some(
+        const isProtected = ["/admin", "/faculty", "/scholar", "/library"].some(
           (prefix) => pathname.startsWith(prefix)
         );
         if (isProtected) {
@@ -196,13 +184,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       isMounted = false;
     };
-  }, [pathname, router]);
+  }, []);
 
   const login = (token: string, userData: User) => {
-    Cookies.set("token", token, { expires: 1, secure: true, sameSite: "lax" });
-    if (typeof window !== "undefined") {
-      localStorage.setItem("token", token);
-    }
     setUser(userData);
     syncUserToLocalStorage(userData);
 
@@ -230,10 +214,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await apiPostJson("/auth/logout", {});
     } catch (e) {
       console.error("Failed to clear server session:", e);
-    }
-    Cookies.remove("token");
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
     }
     setUser(null);
     router.push("/");

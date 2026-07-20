@@ -7,8 +7,9 @@ import { ArrowLeft } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
-import { apiGet, apiPatchJson, type ApiItemResponse, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiPatchJson, getUserAvatarUrl, type ApiItemResponse, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
+import { ProfileImageModal, type ProfileUser } from "@/components/ProfileImageModal";
 
 type User = {
   _id: string;
@@ -19,6 +20,7 @@ type User = {
   permissions?: string[];
   status?: string;
   phone?: string;
+  department?: string;
   researchCenter?: { _id?: string; name?: string; code?: string } | string | null;
   guide?: { name?: string; email?: string } | null;
 };
@@ -29,6 +31,7 @@ const roleLabels: Record<string, string> = {
   faculty: "Faculty",
   scholar: "Scholar",
   research_guide: "Research Guide",
+  library: "Librarian",
 };
 
 function AdminUserDetailsContent() {
@@ -37,6 +40,7 @@ function AdminUserDetailsContent() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(Boolean(userId));
   const [error, setError] = useState<string | null>(null);
+  const [selectedProfileUser, setSelectedProfileUser] = useState<ProfileUser | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -255,9 +259,44 @@ function AdminUserDetailsContent() {
               ) : (
                 <>
                   <div className="flex justify-between items-start">
-                    <div>
-                      <h2 className="font-display text-xl text-[color:var(--maroon-900)]">{user.name}</h2>
-                      <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                    <div className="flex items-center gap-4">
+                      {(() => {
+                        const avatarUrl = getUserAvatarUrl(user);
+                        return (
+                          <div
+                            onClick={() => {
+                              setSelectedProfileUser({
+                                name: user.name,
+                                email: user.email,
+                                role: user.role,
+                                roles: user.roles,
+                                avatar: avatarUrl,
+                                department: user.department,
+                                researchCenter: user.researchCenter,
+                              });
+                            }}
+                            className="w-14 h-14 rounded-full overflow-hidden bg-slate-100 flex items-center justify-center border-2 border-[color:var(--maroon-700)] shrink-0 cursor-pointer hover:scale-105 transition-all shadow-md"
+                            title="Click to view profile photo"
+                          >
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt={user.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            ) : (
+                              <span className="text-sm font-bold text-slate-500">{user.name.substring(0, 2).toUpperCase()}</span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      <div>
+                        <h2 className="font-display text-xl text-[color:var(--maroon-900)]">{user.name}</h2>
+                        <p className="mt-1 text-sm text-slate-500">{user.email}</p>
+                      </div>
                     </div>
                     <button onClick={() => setIsEditing(true)} className="rounded-full border border-[color:var(--border)] px-4 py-1.5 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50">
                       Edit Details
@@ -279,6 +318,11 @@ function AdminUserDetailsContent() {
                       <span className="font-semibold">Research Center:</span>{" "}
                       {(user.researchCenter && typeof user.researchCenter === "object" ? user.researchCenter.name : user.researchCenter) || "N/A"}
                     </p>
+                    {isFacultyType && (
+                      <p>
+                        <span className="font-semibold">Department:</span> {user.department || "N/A"}
+                      </p>
+                    )}
                     <p>
                       <span className="font-semibold">Guide:</span> {user.guide?.name ?? "N/A"}
                     </p>
@@ -289,6 +333,11 @@ function AdminUserDetailsContent() {
           ) : null}
         </div>
       </section>
+      <ProfileImageModal
+        isOpen={!!selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
+        user={selectedProfileUser}
+      />
     </PageLayout>
   );
 }

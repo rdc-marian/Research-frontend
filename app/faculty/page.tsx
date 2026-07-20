@@ -15,11 +15,14 @@ import {
   LayoutDashboard,
   Coins,
   Calendar,
+  Upload,
+  Check,
+  Eye,
 } from "lucide-react";
 import { DashboardCards } from "@/components/DashboardCards";
 import { PageLayout } from "@/components/PageLayout";
-import { facultyNav } from "@/data/roleNav";
-import { apiGet, apiPatchJson, apiPostForm, apiDelete, transformGoogleDriveLink, type ApiListResponse } from "@/lib/api";
+import { facultyNav, getFacultyNav } from "@/data/roleNav";
+import { apiGet, apiPatchJson, apiPostForm, apiDelete, transformGoogleDriveLink, getUserAvatarUrl, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 type Submission = {
@@ -92,6 +95,7 @@ export default function FacultyDashboard() {
   const [profileUniqueId, setProfileUniqueId] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
   const [profileDept, setProfileDept] = useState("");
+  const [profileDepartment, setProfileDepartment] = useState("");
   const [profileAvatar, setProfileAvatar] = useState("");
   const [profileSpecialization, setProfileSpecialization] = useState("");
   const [profileExperience, setProfileExperience] = useState("");
@@ -102,6 +106,13 @@ export default function FacultyDashboard() {
 
   // New row form
   const [newRowValues, setNewRowValues] = useState<Record<string, string>>({});
+
+  // Leave review state for Research Guide
+  const [guideLeaves, setGuideLeaves] = useState<any[]>([]);
+  const [leaveToReview, setLeaveToReview] = useState<any | null>(null);
+  const [leaveReviewAction, setLeaveReviewAction] = useState<"ApprovedByGuide" | "Rejected" | null>(null);
+  const [leaveReviewNote, setLeaveReviewNote] = useState("");
+  const [submittingLeaveReview, setSubmittingLeaveReview] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -154,6 +165,9 @@ export default function FacultyDashboard() {
           const myScholars = scholarsRes.items.filter((s: any) => s.guide?._id === user._id || s.guide === user._id);
           const pendingPortfolioReviews = portfolioApprovalsRes ? portfolioApprovalsRes.items.filter((item: any) => item.category !== "leave").length : 0;
           const pendingLeavesCount = pendingLeavesRes ? pendingLeavesRes.items.length : 0;
+          if (pendingLeavesRes) {
+            setGuideLeaves(pendingLeavesRes.items);
+          }
 
           setGuideMetrics([
             { label: "My Scholars", value: `${myScholars.length}`, icon: Users },
@@ -239,10 +253,11 @@ export default function FacultyDashboard() {
       // Load Profile fields from user context
       setProfileName(user?.name || "");
       setProfileDesignation(user?.designation || "");
-      setProfileUniqueId(user?.uniqueId || `MCKA-FAC-${user._id.slice(-4).toUpperCase()}`);
+      setProfileUniqueId(user?.uniqueId || "");
       setProfileEmail(user?.email || "");
       setProfileDept(user?.researchCenter?.name || (typeof user?.researchCenter === "string" ? user?.researchCenter : ""));
-      setProfileAvatar(user?.avatar || "");
+      setProfileDepartment(user?.department || "");
+      setProfileAvatar(getUserAvatarUrl(user));
       setProfileSpecialization(user?.preferences?.faculty_profile_specialization || "");
       setProfileExperience(user?.preferences?.faculty_profile_experience || "");
     }
@@ -294,7 +309,8 @@ export default function FacultyDashboard() {
         name: profileName,
         email: profileEmail,
         designation: profileDesignation,
-        uniqueId: profileUniqueId,
+        uniqueId: profileUniqueId.trim(),
+        department: profileDepartment.trim(),
         avatar: transformGoogleDriveLink(profileAvatar),
         preferences: {
           ...(user.preferences || {}),
@@ -504,6 +520,10 @@ export default function FacultyDashboard() {
   const activeTabConfig = tabsList.find(t => t.id === selectedTab);
   const activeTabRows = customTabsData[selectedTab] || [];
 
+  const dynamicNavItems = useMemo(() => {
+    return getFacultyNav(user?.permissions);
+  }, [user?.permissions]);
+
   if (user?.requirePasswordChange) {
     return (
       <div className="flex h-screen items-center justify-center bg-slate-50">
@@ -519,7 +539,7 @@ export default function FacultyDashboard() {
       title="Faculty Dashboard"
       userName={profileName}
       roleLabel="Faculty Member"
-      navItems={facultyNav}
+      navItems={dynamicNavItems}
       activeItem="Dashboard"
     >
       {error ? (
@@ -545,26 +565,27 @@ export default function FacultyDashboard() {
       <div className="rounded-2xl border border-[color:var(--border)] bg-white p-6 shadow-sm mb-6">
         <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
           {/* Avatar frame */}
-          <label className="w-32 h-32 md:w-36 md:h-36 relative rounded-lg overflow-hidden border border-[color:var(--border)] flex-shrink-0 bg-slate-50 flex items-center justify-center cursor-pointer group">
-            {profileAvatar ? (
-              <img
-                src={profileAvatar}
-                alt={profileName}
-                className="w-full h-full object-cover group-hover:opacity-50 transition-opacity"
-                onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150";
-                }}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center font-bold text-3xl text-[#9B0302] bg-red-50 group-hover:bg-red-100 transition-colors">
-                {(profileName || user?.name || "FA").split(" ").map(n => n[0]).join("").substring(0, 2)}
+          {(() => {
+            const displayAvatar = profileAvatar || getUserAvatarUrl(user);
+            return (
+              <div className="w-32 h-32 md:w-36 md:h-36 relative rounded-lg overflow-hidden border border-[color:var(--border)] flex-shrink-0 bg-slate-50 flex items-center justify-center">
+                {displayAvatar ? (
+                  <img
+                    src={displayAvatar}
+                    alt={profileName || user?.name || "Faculty"}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center font-bold text-3xl text-[#9B0302] bg-red-50">
+                    {(profileName || user?.name || "FA").split(" ").map(n => n[0]).join("").substring(0, 2)}
+                  </div>
+                )}
               </div>
-            )}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-               <span className="bg-black/60 text-white text-[10px] font-bold px-2 py-1 rounded">Change Photo</span>
-            </div>
-            <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-          </label>
+            );
+          })()}
           
           {/* Details */}
           <div className="flex-1 space-y-1.5 w-full">
@@ -586,11 +607,15 @@ export default function FacultyDashboard() {
             <div className="pt-2 text-xs space-y-1.5 text-slate-700 grid grid-cols-1 md:grid-cols-2 gap-x-4">
               <div>
                 <span className="font-semibold text-slate-500">Unique ID : </span>
-                <span className="font-bold text-slate-800">{profileUniqueId}</span>
+                <span className="font-bold text-slate-800">{profileUniqueId || "Not set"}</span>
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Research Center : </span>
                 <span className="font-bold text-slate-800">{profileDept} Research Center</span>
+              </div>
+              <div>
+                <span className="font-semibold text-slate-500">Department : </span>
+                <span className="font-bold text-slate-800">{profileDepartment || "Not set"}</span>
               </div>
               <div>
                 <span className="font-semibold text-slate-500">Email : </span>
@@ -772,24 +797,36 @@ export default function FacultyDashboard() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Unique ID</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Unique ID (Optional)</label>
                   <input
                     type="text"
+                    placeholder="Enter Unique ID"
                     value={profileUniqueId}
                     onChange={(e) => setProfileUniqueId(e.target.value)}
                     className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Research Center</label>
+                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Department</label>
                   <input
                     type="text"
-                    value={profileDept}
-                    readOnly
-                    disabled
-                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed focus:outline-none"
+                    placeholder="e.g. Computer Science, Chemistry"
+                    value={profileDepartment}
+                    onChange={(e) => setProfileDepartment(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Research Center</label>
+                <input
+                  type="text"
+                  value={profileDept}
+                  readOnly
+                  disabled
+                  className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-slate-50 px-3.5 py-2 text-xs text-slate-500 cursor-not-allowed focus:outline-none"
+                />
               </div>
 
               <div>
@@ -802,19 +839,45 @@ export default function FacultyDashboard() {
                 />
               </div>
 
-
-
-
-
               <div>
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Photo URL (Optional)</label>
-                <input
-                  type="text"
-                  value={profileAvatar}
-                  onChange={(e) => setProfileAvatar(transformGoogleDriveLink(e.target.value))}
-                  placeholder="You can also click your avatar directly to upload a file"
-                  className="mt-1 w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
-                />
+                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-2">Profile Picture Link</label>
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-[color:var(--border)] bg-slate-50 flex items-center justify-center flex-shrink-0">
+                    {profileAvatar ? (
+                      <img
+                        src={profileAvatar}
+                        alt={profileName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.src = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center font-bold text-lg text-[#9B0302] bg-red-50">
+                        {(profileName || user?.name || "FA").split(" ").map(n => n[0]).join("").substring(0, 2)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={profileAvatar}
+                      onChange={(e) => setProfileAvatar(transformGoogleDriveLink(e.target.value))}
+                      placeholder="Paste image / Google Drive URL here"
+                      className="w-full rounded-xl border border-[color:var(--border)] bg-white px-3.5 py-2 text-xs text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#9B0302]"
+                    />
+                    {profileAvatar ? (
+                      <button
+                        type="button"
+                        onClick={() => setProfileAvatar("")}
+                        className="mt-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition inline-flex items-center gap-1.5"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        <span>Remove Photo Link</span>
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-[color:var(--border)] space-y-3">

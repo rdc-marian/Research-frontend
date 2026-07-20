@@ -28,6 +28,12 @@ export default function Home() {
   // App states
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalCenters: 0,
+    totalPublications: 0,
+    totalScholars: 0,
+    totalGuides: 0
+  });
   
   // Modals state
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -47,6 +53,7 @@ export default function Home() {
   const [regEmail, setRegEmail] = useState("");
   const [regRole, setRegRole] = useState("");
   const [regDept, setRegDept] = useState("");
+  const [regFacultyDepartment, setRegFacultyDepartment] = useState("");
   const [regGuideId, setRegGuideId] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirmPassword, setRegConfirmPassword] = useState("");
@@ -71,17 +78,30 @@ export default function Home() {
   }, []);
 
   // Fetch users and load dynamic local registry data
+  // Fetch users, departments, and dynamic landing page stats
   useEffect(() => {
     const fetchUsersAndDepts = async () => {
       try {
         setLoading(true);
-        const [res, deptRes] = await Promise.all([
+        const [res, deptRes, statsRes] = await Promise.all([
           apiGet<ApiListResponse<User>>("/research-guides"),
-          apiGet<ApiListResponse<{ _id: string; name: string; status?: string }>>("/research-centers")
+          apiGet<ApiListResponse<{ _id: string; name: string; status?: string }>>("/research-centers"),
+          apiGet<{ totalCenters: number; totalPublications: number; totalScholars: number; totalGuides: number }>("/stats").catch(() => null)
         ]);
         setUsers(res.items || []);
         const activeCenters = (deptRes.items || []).filter(c => c.status === "Active" || !c.status);
         setAvailableDepartments(activeCenters);
+
+        if (statsRes) {
+          setStats(statsRes);
+        } else {
+          setStats({
+            totalCenters: activeCenters.length,
+            totalPublications: 0,
+            totalScholars: 0,
+            totalGuides: (res.items || []).length
+          });
+        }
       } catch (err) {
         console.error("Failed to fetch user directory or departments:", err);
       } finally {
@@ -105,6 +125,7 @@ export default function Home() {
     setRegEmail("");
     setRegRole("");
     setRegDept("");
+    setRegFacultyDepartment("");
     setRegGuideId("");
     setRegPassword("");
     setRegConfirmPassword("");
@@ -123,6 +144,10 @@ export default function Home() {
     }
     if (regRole !== "scholar" && !regDept) {
       setRegError("Please select a research center.");
+      return;
+    }
+    if (regRole === "faculty" && !regFacultyDepartment.trim()) {
+      setRegError("Please enter your department.");
       return;
     }
     if (regPassword !== regConfirmPassword) {
@@ -156,6 +181,7 @@ export default function Home() {
         roles: [regRole],
         researchCenterId: researchCenterId,
         guideId: guideId,
+        department: regRole === "faculty" ? regFacultyDepartment.trim() : undefined,
         password: regPassword,
         status: "PendingApproval"
       });
@@ -207,10 +233,10 @@ export default function Home() {
     }
   };
 
-  const totalScholars = 42; // Sourced dynamically or static fallback
-  const totalGuides = users.filter((u) => u.permissions?.includes("research_guide")).length;
-  const totalPublications = 18; // Static fallback
-  const totalCenters = availableDepartments.length;
+  const totalScholars = stats.totalScholars;
+  const totalGuides = stats.totalGuides || users.filter((u) => u.permissions?.includes("research_guide")).length;
+  const totalPublications = stats.totalPublications;
+  const totalCenters = stats.totalCenters || availableDepartments.length;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-body selection:bg-[#9B0302]/20 selection:text-[#9B0302] overflow-x-hidden">
@@ -283,7 +309,7 @@ export default function Home() {
                 <div className="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
                   <FileText className="w-5 h-5" />
                 </div>
-                <span className="text-4xl font-display font-bold text-slate-900 mb-1">{totalPublications}+</span>
+                <span className="text-4xl font-display font-bold text-slate-900 mb-1">{totalPublications}</span>
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Publications</span>
               </div>
               <div className="flex flex-col items-center text-center px-4">
@@ -564,6 +590,23 @@ export default function Home() {
                           </>
                         )}
                       </select>
+                    </div>
+                  </div>
+                )}
+
+                {regRole === "faculty" && (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Department</label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Computer Science, Chemistry, Commerce"
+                        value={regFacultyDepartment}
+                        onChange={(e) => setRegFacultyDepartment(e.target.value)}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-10 pr-4 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302] transition-all"
+                      />
                     </div>
                   </div>
                 )}

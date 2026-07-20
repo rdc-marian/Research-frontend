@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Check, X, Eye } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
-import { facultyNav } from "@/data/roleNav";
+import { StatusBadge } from "@/components/StatusBadge";
+import { getFacultyNav } from "@/data/roleNav";
 import { apiGet, apiPatchJson, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
@@ -23,6 +24,7 @@ type LeaveItem = {
   totalDays: number;
   reason: string;
   status: string;
+  guideNote?: string;
   document?: {
     url: string;
     originalName: string;
@@ -46,6 +48,7 @@ export default function GuideLeaveReviewsPage() {
   const [leaves, setLeaves] = useState<LeaveItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
 
   // Review modal state
   const [selectedLeave, setSelectedLeave] = useState<LeaveItem | null>(null);
@@ -53,16 +56,28 @@ export default function GuideLeaveReviewsPage() {
   const [actionStatus, setActionStatus] = useState<"ApprovedByGuide" | "Rejected" | null>(null);
   const [processing, setProcessing] = useState(false);
 
+  const dynamicNavItems = useMemo(() => {
+    return getFacultyNav(user?.permissions);
+  }, [user?.permissions]);
+
   const loadLeaves = async () => {
     if (!user?._id) return;
     try {
       setLoading(true);
       setError(null);
-      // Fetches leaves with status Pending that are under this guide
-      const res = await apiGet<ApiListResponse<LeaveItem>>(`/leaves?guideId=${user._id}&status=Pending`);
-      setLeaves(res.items);
+      // Fetch full leave history for this guide's scholars
+      const res = await apiGet<ApiListResponse<LeaveItem>>(`/leaves?guideId=${user._id}`);
+      
+      // Sort newest requests to the top
+      const sorted = [...(res.items || [])].sort((a, b) => {
+        const timeA = new Date(a.createdAt || a.startDate).getTime();
+        const timeB = new Date(b.createdAt || b.startDate).getTime();
+        return timeB - timeA;
+      });
+
+      setLeaves(sorted);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load leave requests");
+      setError(err instanceof Error ? err.message : "Failed to load leave history");
     } finally {
       setLoading(false);
     }
@@ -95,72 +110,115 @@ export default function GuideLeaveReviewsPage() {
     }
   };
 
+  const filteredLeaves = useMemo(() => {
+    if (activeFilter === "Pending") {
+      return leaves.filter((l) => l.status === "Pending");
+    }
+    if (activeFilter === "Approved") {
+      return leaves.filter((l) => l.status === "ApprovedByGuide" || l.status === "ApprovedByCoordinator" || l.status === "Approved");
+    }
+    if (activeFilter === "Rejected") {
+      return leaves.filter((l) => l.status === "Rejected");
+    }
+    return leaves;
+  }, [leaves, activeFilter]);
+
+  const counts = useMemo(() => {
+    return {
+      All: leaves.length,
+      Pending: leaves.filter((l) => l.status === "Pending").length,
+      Approved: leaves.filter((l) => l.status === "ApprovedByGuide" || l.status === "ApprovedByCoordinator" || l.status === "Approved").length,
+      Rejected: leaves.filter((l) => l.status === "Rejected").length,
+    };
+  }, [leaves]);
+
   const columns = [
     { key: "scholar", label: "Scholar" },
     { key: "type", label: "Leave Type" },
     { key: "dates", label: "Duration" },
     { key: "days", label: "Days", align: "center" as const },
-    { key: "reason", label: "Reason" },
+    { key: "reason", label: "Reason & Remarks" },
+    { key: "status", label: "Status" },
     { key: "action", label: "Action", align: "right" as const },
   ];
 
   const rows = useMemo(() => {
-    return leaves.map((item) => ({
+    return filteredLeaves.map((item) => ({
       id: item._id,
       scholar: (
         <div>
-          <p className="font-semibold text-slate-800">{item.scholar?.name}</p>
-          <p className="text-[10px] text-slate-400">{item.scholar?.researchCenter?.name}</p>
+          <p className="font-semibold text-slate-800">{item.scholar?.name || "Scholar"}</p>
+          <p className="text-[10px] text-slate-400">{item.scholar?.email}</p>
         </div>
       ),
       type: item.leaveType,
       dates: `${formatDate(item.startDate)} - ${formatDate(item.endDate)}`,
       days: item.totalDays,
-      reason: <span className="max-w-[150px] truncate block" title={item.reason}>{item.reason}</span>,
+      reason: (
+        <div className="max-w-[200px]">
+          <p className="truncate text-slate-700 font-medium" title={item.reason}>{item.reason}</p>
+          {item.guideNote ? (
+            <p className="text-[10px] text-slate-500 italic mt-0.5 truncate" title={`Guide Note: ${item.guideNote}`}>
+              Remark: {item.guideNote}
+            </p>
+          ) : null}
+        </div>
+      ),
+      status: <StatusBadge status={item.status} />,
       action: (
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end items-center gap-2">
           {item.document?.url ? (
             <a
               href={item.document.url}
               target="_blank"
               rel="noreferrer"
-              className="p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full"
-              title="View leave attachment proof"
+              className="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition"
+              title="View attachment proof"
             >
               <Eye className="h-4 w-4" />
             </a>
           ) : null}
-          <button
-            onClick={() => {
-              setSelectedLeave(item);
-              setActionStatus("ApprovedByGuide");
-            }}
-            className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-full"
-            title="Approve Leave"
-          >
-            <Check className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => {
-              setSelectedLeave(item);
-              setActionStatus("Rejected");
-            }}
-            className="p-1 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-full"
-            title="Reject Leave"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          {item.status === "Pending" ? (
+            <>
+              <button
+                onClick={() => {
+                  setSelectedLeave(item);
+                  setActionStatus("ApprovedByGuide");
+                }}
+                className="px-2 py-1 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition flex items-center gap-1"
+                title="Approve Leave"
+              >
+                <Check className="h-3.5 w-3.5" />
+                Approve
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedLeave(item);
+                  setActionStatus("Rejected");
+                }}
+                className="px-2 py-1 text-xs font-semibold rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition flex items-center gap-1"
+                title="Reject Leave"
+              >
+                <X className="h-3.5 w-3.5" />
+                Reject
+              </button>
+            </>
+          ) : (
+            <span className="text-[11px] text-slate-400 font-medium px-2 py-0.5 rounded bg-slate-50">
+              Completed
+            </span>
+          )}
         </div>
       ),
     }));
-  }, [leaves]);
+  }, [filteredLeaves]);
 
   return (
     <PageLayout
       title="Leave Reviews"
       userName={user?.name || "Faculty"}
       roleLabel="Faculty Member"
-      navItems={facultyNav}
+      navItems={dynamicNavItems}
       activeItem="Leave Reviews"
     >
       <div className="space-y-6">
@@ -173,15 +231,34 @@ export default function GuideLeaveReviewsPage() {
             Back to Dashboard
           </Link>
           <h1 className="font-display text-2xl font-bold text-[color:var(--maroon-900)] mt-2">
-            Scholar Leave Applications
+            Scholar Leave History & Reviews
           </h1>
-          <p className="text-sm text-slate-500 mt-1">Review leaves applied by scholars under your guidance.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            Review and manage leave applications submitted by scholars under your guidance.
+          </p>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
+          {(["All", "Pending", "Approved", "Rejected"] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setActiveFilter(filter)}
+              className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+                activeFilter === filter
+                  ? "bg-[#9B0302] text-white shadow-xs"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {filter} ({counts[filter]})
+            </button>
+          ))}
         </div>
 
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         {loading ? (
-          <p className="text-sm text-slate-500">Loading leave approvals...</p>
+          <p className="text-sm text-slate-500">Loading leave requests...</p>
         ) : (
           <DataTable columns={columns} rows={rows} />
         )}
@@ -227,7 +304,7 @@ export default function GuideLeaveReviewsPage() {
                       className="text-[color:var(--maroon-700)] font-semibold inline-flex items-center gap-1 hover:underline"
                     >
                       <Eye className="h-4.5 w-4.5" />
-                      View Attachment
+                      View Attachment Proof
                     </a>
                   </div>
                 ) : null}

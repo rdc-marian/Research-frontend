@@ -10,6 +10,7 @@ import {
   Users,
   NotebookText,
   FolderOpen,
+  Calendar,
 } from "lucide-react";
 
 type PageLayoutProps = {
@@ -35,11 +36,19 @@ export function PageLayout({
   let resolvedRoleLabel = roleLabel;
 
   const currentRole = user?.role || user?.roles?.[0];
-  const isFacultyUser = currentRole === "faculty";
+  const isFacultyUser = currentRole === "faculty" || currentRole === "research_guide" || currentRole === "coordinator";
 
   if (isFacultyUser && user) {
-    const isGuide = user.permissions?.includes("research_guide");
-    const isCoordinator = user.permissions?.includes("coordinator");
+    const isGuide =
+      user.role === "research_guide" ||
+      user.roles?.includes("research_guide") ||
+      user.permissions?.includes("research_guide") ||
+      user.role === "faculty";
+
+    const isCoordinator =
+      user.role === "coordinator" ||
+      user.roles?.includes("coordinator") ||
+      user.permissions?.includes("coordinator");
 
     // Dynamic Role Label based on permissions
     const labels = ["Faculty Member"];
@@ -53,12 +62,14 @@ export function PageLayout({
 
     if (isGuide) {
       dynamicNav.push({ label: "Scholars", icon: Users, href: "/faculty/scholars" });
+      dynamicNav.push({ label: "Leave Reviews", icon: Calendar, href: "/faculty/leave-reviews" });
     }
 
     dynamicNav.push({ label: "Submissions", icon: FileText, href: "/faculty/submissions" });
 
     if (isCoordinator) {
       dynamicNav.push({ label: "Center Documents", icon: FolderOpen, href: "/faculty/center-documents" });
+      dynamicNav.push({ label: "Center Leaves", icon: Calendar, href: "/faculty/leaves" });
     }
 
     dynamicNav.push({ label: "Reports", icon: NotebookText, href: "/faculty/reports" });

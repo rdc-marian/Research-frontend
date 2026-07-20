@@ -8,13 +8,17 @@ import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { facultyNav } from "@/data/roleNav";
-import { apiGet, apiPostForm, type ApiItemResponse, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiPostForm, getUserAvatarUrl, type ApiItemResponse, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
+import { ProfileImageModal, type ProfileUser } from "@/components/ProfileImageModal";
 
 type Scholar = {
   _id: string;
   name?: string;
   email?: string;
+  avatar?: string;
+  preferences?: any;
+  department?: string;
   researchCenter?: { _id: string; name: string } | null;
   status?: string;
 };
@@ -47,6 +51,7 @@ function FacultyScholarDetailsContent() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(Boolean(scholarId));
   const [error, setError] = useState<string | null>(null);
+  const [selectedProfileUser, setSelectedProfileUser] = useState<ProfileUser | null>(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -146,14 +151,45 @@ function FacultyScholarDetailsContent() {
           {!loading && !error && scholar ? (
             <>
               <div className="flex flex-wrap items-center gap-4">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[color:var(--muted)] text-sm font-semibold text-[color:var(--maroon-800)]">
-                  {(scholar.name ?? "NA")
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)
-                    .toUpperCase()}
-                </div>
+                {(() => {
+                  const avatarUrl = getUserAvatarUrl(scholar);
+                  return (
+                    <div
+                      onClick={() => {
+                        setSelectedProfileUser({
+                          name: scholar.name || "Scholar",
+                          email: scholar.email,
+                          role: "scholar",
+                          avatar: avatarUrl,
+                          department: scholar.department,
+                          researchCenter: scholar.researchCenter,
+                        });
+                      }}
+                      className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-full border-2 border-[color:var(--maroon-700)] bg-[color:var(--muted)] text-sm font-semibold text-[color:var(--maroon-800)] cursor-pointer hover:scale-105 transition-all shadow-md"
+                      title="Click to view profile photo"
+                    >
+                      {avatarUrl ? (
+                        <img
+                          src={avatarUrl}
+                          alt={scholar.name ?? "Scholar"}
+                          className="h-full w-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <span>
+                          {(scholar.name ?? "NA")
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div>
                   <h2 className="font-display text-lg text-[color:var(--maroon-900)]">{scholar.name ?? "Unknown"}</h2>
                   <p className="text-sm text-slate-500">{scholar.email ?? "N/A"}</p>
@@ -254,6 +290,11 @@ function FacultyScholarDetailsContent() {
           </div>
         </div>
       )}
+      <ProfileImageModal
+        isOpen={!!selectedProfileUser}
+        onClose={() => setSelectedProfileUser(null)}
+        user={selectedProfileUser}
+      />
     </PageLayout>
   );
 }

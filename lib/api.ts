@@ -1,5 +1,3 @@
-import Cookies from "js-cookie";
-
 export type ApiListResponse<T> = {
   items: T[];
 };
@@ -13,11 +11,7 @@ export type ApiMessageResponse = {
 };
 
 const getAuthHeaders = (): Record<string, string> => {
-  let token = typeof window !== "undefined" ? Cookies.get("token") : undefined;
-  if (!token && typeof window !== "undefined") {
-    token = localStorage.getItem("token") || undefined;
-  }
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 };
 
 const rawBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -72,6 +66,12 @@ const makeRequest = async <T>(
     } catch (e) {
       // Ignore parse error, fallback to default
     }
+    if (response.status === 401 || response.status === 404) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("auth-error", { detail: { message: errorMessage } }));
+      }
+    }
+
     throw new Error(errorMessage);
   }
 
@@ -160,4 +160,10 @@ export function transformGoogleDriveLink(url: string): string {
     return `https://lh3.googleusercontent.com/d/${matchId[1]}`;
   }
   return trimmed;
+}
+
+export function getUserAvatarUrl(u: any): string {
+  if (!u) return "";
+  const raw = u.avatar || u.preferences?.scholar_avatar || u.preferences?.faculty_avatar || u.preferences?.research_guide_avatar || u.preferences?.coordinator_avatar || "";
+  return transformGoogleDriveLink(raw);
 }
