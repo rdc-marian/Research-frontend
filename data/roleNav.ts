@@ -12,6 +12,7 @@ import {
   Award,
   Calendar,
   Coins,
+  FolderOpen,
 } from "lucide-react";
 
 export const scholarNav: NavItem[] = [
@@ -34,7 +35,7 @@ export function getFacultyNav(permissions?: string[]): NavItem[] {
     items.push({ label: "Leave Reviews", icon: Calendar, href: "/faculty/leave-reviews" });
   }
   if (permissions?.includes("coordinator")) {
-    items.push({ label: "Center Leaves", icon: Calendar, href: "/faculty/leaves" });
+    items.push({ label: "Center Documents", icon: FolderOpen, href: "/faculty/center-documents" });
   }
   return items;
 }
@@ -59,6 +60,7 @@ export const adminNav: NavItem[] = [
   { label: "Overall Leaves", icon: Calendar, href: "/admin/leaves" },
   { label: "Reports", icon: NotebookText, href: "/admin/reports" },
   { label: "Incentives", icon: Coins, href: "/admin/incentives" },
+  { label: "Principal Approvals", icon: ClipboardCheck, href: "/admin/principal" },
   { label: "Change Password", icon: Lock, href: "/admin/settings" },
 ];
 
@@ -67,7 +69,7 @@ export const coordinatorNav: NavItem[] = [
   { label: "Submissions", icon: FileText, href: "/coordinator/submissions" },
   { label: "Approvals", icon: ClipboardCheck, href: "/coordinator/approvals" },
   { label: "Scholar Portfolios", icon: Award, href: "/coordinator/portfolios" },
-  { label: "Research Center Leaves", icon: Calendar, href: "/coordinator/leaves" },
+  { label: "Center Documents", icon: FolderOpen, href: "/faculty/center-documents" },
   { label: "Reports", icon: NotebookText, href: "/coordinator/reports" },
   { label: "Profile", icon: User, href: "/coordinator/profile" },
 ];

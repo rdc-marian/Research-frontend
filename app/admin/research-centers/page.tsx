@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Plus, Search, Edit2, Trash2, X, Power, Building2, User, ChevronRight } from "lucide-react";
+import { Plus, Search, Edit2, Trash2, X, Power, Building2, ChevronRight, Eye } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { adminNav } from "@/data/roleNav";
@@ -14,7 +14,6 @@ type ResearchCenter = {
   name: string;
   code: string;
   status: string;
-  coordinator?: { _id?: string; name?: string; email?: string } | null;
 };
 
 type User = {
@@ -42,9 +41,7 @@ export default function AdminResearchCentersPage() {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-
   const [centerName, setCenterName] = useState("");
-  const [coordinatorId, setCoordinatorId] = useState("");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -68,12 +65,6 @@ export default function AdminResearchCentersPage() {
     loadData();
   }, [loadData]);
 
-  const coordinators = useMemo(() => {
-    return allUsers.filter((u) =>
-      u.role === "faculty" && u.permissions?.includes("coordinator")
-    );
-  }, [allUsers]);
-
   const handleCreate = async () => {
     if (!centerName.trim()) {
       setSaveError("Research Center Name is required.");
@@ -86,12 +77,10 @@ export default function AdminResearchCentersPage() {
 
       await apiPostJson("/research-centers", {
         name: centerName.trim(),
-        coordinatorId: coordinatorId || undefined,
         status: "Active",
       });
 
       setCenterName("");
-      setCoordinatorId("");
       setShowForm(false);
       await loadData();
     } catch (err) {
@@ -104,7 +93,6 @@ export default function AdminResearchCentersPage() {
   const startEdit = (center: ResearchCenter) => {
     setEditingCenter(center);
     setCenterName(center.name);
-    setCoordinatorId(center.coordinator?._id || "");
     setSaveError(null);
   };
 
@@ -121,12 +109,10 @@ export default function AdminResearchCentersPage() {
 
       await apiPatchJson(`/research-centers/${editingCenter._id}`, {
         name: centerName.trim(),
-        coordinatorId: coordinatorId || null,
       });
 
       setEditingCenter(null);
       setCenterName("");
-      setCoordinatorId("");
       await loadData();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to update research center");
@@ -145,12 +131,8 @@ export default function AdminResearchCentersPage() {
     }
   };
 
-  const handleDelete = async (center: ResearchCenter, memberCount: number) => {
-    if (memberCount > 0) {
-      alert("Cannot delete research center while faculty or scholars are assigned to it.");
-      return;
-    }
-    if (!window.confirm(`Delete research center "${center.name}"?`)) {
+  const handleDelete = async (center: ResearchCenter) => {
+    if (!window.confirm(`Are you sure you want to delete research center "${center.name}"? This will unassign any associated users.`)) {
       return;
     }
     try {
@@ -167,17 +149,12 @@ export default function AdminResearchCentersPage() {
   const filteredCenters = useMemo(() => {
     if (!search.trim()) return centers;
     const q = search.toLowerCase();
-    return centers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.coordinator?.name?.toLowerCase().includes(q)
-    );
+    return centers.filter((c) => c.name.toLowerCase().includes(q));
   }, [centers, search]);
 
   const columns = [
     { key: "name", label: "Research Center" },
-    { key: "coordinator", label: "Coordinator" },
-    { key: "members", label: "Total Members" },
+    { key: "members", label: "Total Users" },
     { key: "status", label: "Status" },
     { key: "action", label: "Actions", align: "right" as const },
   ];
@@ -202,17 +179,9 @@ export default function AdminResearchCentersPage() {
             </div>
           </div>
         ),
-        coordinator: (
-          <div className="flex items-center gap-2 text-xs">
-            <User className="h-3.5 w-3.5 text-slate-400" />
-            <span className={center.coordinator?.name ? "font-medium text-slate-700" : "text-slate-400 italic"}>
-              {center.coordinator?.name || "Unassigned"}
-            </span>
-          </div>
-        ),
         members: (
           <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-600">
-            {centerMembers.length} {centerMembers.length === 1 ? "member" : "members"}
+            {centerMembers.length} {centerMembers.length === 1 ? "user" : "users"}
           </span>
         ),
         status: (
@@ -235,20 +204,20 @@ export default function AdminResearchCentersPage() {
               href={`/admin/research-centers/${center._id}`}
               className="inline-flex items-center gap-1 rounded-full border border-[color:var(--border)] px-3 py-1 text-xs font-semibold text-[color:var(--maroon-700)] hover:bg-slate-50 transition-colors"
             >
-              Manage
+              <Eye className="h-3.5 w-3.5" /> View Users & Details
               <ChevronRight className="h-3.5 w-3.5" />
             </Link>
             <button
               onClick={() => startEdit(center)}
-              className="rounded-full border border-slate-200 p-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
-              title="Edit"
+              className="rounded-full border border-slate-200 p-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Edit Center Name"
             >
               <Edit2 className="h-3.5 w-3.5" />
             </button>
             <button
-              onClick={() => handleDelete(center, centerMembers.length)}
-              className="rounded-full border border-red-200 p-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors"
-              title="Delete"
+              onClick={() => handleDelete(center)}
+              className="rounded-full border border-red-200 p-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+              title="Delete Research Center"
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
@@ -270,10 +239,10 @@ export default function AdminResearchCentersPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4">
           <div>
             <h2 className="font-display text-lg font-bold text-[color:var(--maroon-900)]">
-              Research Centers
+              Research Centers Directory
             </h2>
             <p className="text-xs text-slate-500">
-              Overview and management of institutional research centers.
+              Overview, viewing, and management of institutional research centers.
             </p>
           </div>
           <button
@@ -281,11 +250,10 @@ export default function AdminResearchCentersPage() {
             onClick={() => {
               setShowForm(true);
               setCenterName("");
-              setCoordinatorId("");
               setEditingCenter(null);
               setSaveError(null);
             }}
-            className="inline-flex items-center gap-2 rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[color:var(--maroon-950)] transition-colors cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             Add Research Center
@@ -294,8 +262,8 @@ export default function AdminResearchCentersPage() {
 
         {/* Create / Edit Modal Overlay */}
         {(showForm || editingCenter) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-scale-up">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+            <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="font-display text-sm font-bold text-[color:var(--maroon-900)]">
                   {editingCenter ? "Edit Research Center" : "Add Research Center"}
@@ -305,7 +273,7 @@ export default function AdminResearchCentersPage() {
                     setShowForm(false);
                     setEditingCenter(null);
                   }}
-                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all"
+                  className="rounded-lg p-1 text-slate-400 hover:bg-slate-50 hover:text-slate-600 transition-all cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -324,25 +292,6 @@ export default function AdminResearchCentersPage() {
                     placeholder="e.g. Computer Science Research Center"
                   />
                 </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wide text-slate-500" htmlFor="rc-coordinator">
-                    Coordinator (Optional)
-                  </label>
-                  <select
-                    id="rc-coordinator"
-                    className={inputClass}
-                    value={coordinatorId}
-                    onChange={(e) => setCoordinatorId(e.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {coordinators.map((c) => (
-                      <option key={c._id} value={c._id}>
-                        {c.name} ({c.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
               </div>
 
               {saveError && <p className="mt-3 text-xs text-red-600 font-medium">{saveError}</p>}
@@ -354,7 +303,7 @@ export default function AdminResearchCentersPage() {
                     setShowForm(false);
                     setEditingCenter(null);
                   }}
-                  className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="rounded-full border border-slate-200 px-4 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -362,7 +311,7 @@ export default function AdminResearchCentersPage() {
                   type="button"
                   onClick={editingCenter ? handleUpdate : handleCreate}
                   disabled={saving}
-                  className="rounded-full bg-[color:var(--maroon-800)] px-5 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-60 hover:bg-[color:var(--maroon-950)] transition-colors"
+                  className="rounded-full bg-[color:var(--maroon-800)] px-5 py-1.5 text-xs font-semibold text-white shadow-sm disabled:opacity-60 hover:bg-[color:var(--maroon-950)] transition-colors cursor-pointer"
                 >
                   {saving ? "Saving..." : editingCenter ? "Save Changes" : "Create Center"}
                 </button>
@@ -377,7 +326,7 @@ export default function AdminResearchCentersPage() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search research centers by name or coordinator..."
+              placeholder="Search research centers by name..."
               className="w-full bg-transparent text-slate-700 outline-none"
             />
           </label>

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { ArrowLeft, Building2, User, FileText, Award, GraduationCap, Users } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { ArrowLeft, Building2, User as UserIcon, FileText, Trash2, UserX, Eye } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -13,6 +13,7 @@ import { ProfileImageModal, type ProfileUser } from "@/components/ProfileImageMo
 import {
   apiGet,
   apiPatchJson,
+  apiDelete,
   type ApiItemResponse,
   type ApiListResponse,
 } from "@/lib/api";
@@ -22,7 +23,6 @@ type ResearchCenter = {
   name: string;
   code: string;
   status: string;
-  coordinator?: { _id?: string; name?: string; email?: string } | null;
 };
 
 type User = {
@@ -48,14 +48,11 @@ type Submission = {
   scholar?: { _id?: string; name?: string } | null;
 };
 
-const inputClass =
-  "mt-1.5 w-full rounded-xl border border-[color:var(--border)] bg-white px-3 py-2 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#9B0302]/20 focus:border-[#9B0302]";
-
 const facultyColumns = [
   { key: "avatar", label: "Photo" },
   { key: "name", label: "Faculty Member" },
   { key: "email", label: "Email" },
-  { key: "guideStatus", label: "Guide Status" },
+  { key: "guideStatus", label: "Role Status" },
   { key: "action", label: "Actions", align: "right" as const },
 ];
 
@@ -72,6 +69,7 @@ const scholarColumns = [
   { key: "email", label: "Email" },
   { key: "guide", label: "Research Guide" },
   { key: "status", label: "Status" },
+  { key: "action", label: "Actions", align: "right" as const },
 ];
 
 const submissionColumns = [
@@ -94,6 +92,7 @@ const formatDate = (value?: string) => {
 
 export default function AdminResearchCenterDetailsPage() {
   const { user: currentUser } = useAuth();
+  const router = useRouter();
   const params = useParams();
   const centerId = useMemo(() => {
     const id = params?.id;
@@ -105,19 +104,10 @@ export default function AdminResearchCenterDetailsPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"members" | "submissions" | "assign">("members");
+  const [actionLoading, setActionLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"members" | "submissions">("members");
   const [memberRoleSubTab, setMemberRoleSubTab] = useState<"faculty" | "guides" | "scholars">("faculty");
   const [selectedProfileUser, setSelectedProfileUser] = useState<ProfileUser | null>(null);
-
-  const [formState, setFormState] = useState({
-    coordinatorId: "",
-    facultyId: "",
-    guideId: "",
-    scholarId: "",
-    scholarGuideId: "",
-  });
 
   const loadData = useCallback(async () => {
     if (!centerId) return;
@@ -134,13 +124,8 @@ export default function AdminResearchCenterDetailsPage() {
       setCenter(centerRes.item);
       setAllUsers(usersRes.items || []);
       setSubmissions(submissionsRes.items || []);
-      
-      setFormState((prev) => ({
-        ...prev,
-        coordinatorId: centerRes.item.coordinator?._id ?? "",
-      }));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load details");
+      setError(err instanceof Error ? err.message : "Failed to load center details");
     } finally {
       setLoading(false);
     }
@@ -194,135 +179,51 @@ export default function AdminResearchCenterDetailsPage() {
     });
   }, [submissions, allUsers, centerId]);
 
-  const coordinators = useMemo(() => {
-    return allUsers.filter((u) =>
-      (u.role === "faculty" || u.roles?.includes("faculty")) && u.permissions?.includes("coordinator")
-    );
-  }, [allUsers]);
-
-  const facultyCandidates = useMemo(() => {
-    return allUsers.filter((u) => {
-      const rc = u.researchCenter;
-      const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      const isFacultyOrGuide =
-        u.role === "faculty" ||
-        u.role === "research_guide" ||
-        u.roles?.includes("faculty") ||
-        u.roles?.includes("research_guide") ||
-        u.permissions?.includes("research_guide");
-      return isFacultyOrGuide && userCenterId !== centerId;
-    });
-  }, [allUsers, centerId]);
-
-  const guideCandidates = useMemo(() => {
-    return allUsers.filter((u) => {
-      const rc = u.researchCenter;
-      const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      const isFacultyOrGuide =
-        u.role === "faculty" ||
-        u.role === "research_guide" ||
-        u.roles?.includes("faculty") ||
-        u.roles?.includes("research_guide");
-      return isFacultyOrGuide && userCenterId === centerId;
-    });
-  }, [allUsers, centerId]);
-
-  const scholarCandidates = useMemo(() => {
-    return allUsers.filter((u) => {
-      const rc = u.researchCenter;
-      const userCenterId = (rc && typeof rc === "object") ? rc._id : rc;
-      return (u.role === "scholar" || u.roles?.includes("scholar")) && userCenterId !== centerId;
-    });
-  }, [allUsers, centerId]);
-
-  const scholarDropdownCandidates = useMemo(() => {
-    const centerScholarIds = new Set(scholars.map((s) => s._id));
-    return [
-      ...scholars,
-      ...scholarCandidates.filter((s) => !centerScholarIds.has(s._id)),
-    ];
-  }, [scholars, scholarCandidates]);
-
-  const handleFacultyAssign = async () => {
-    if (!centerId || !formState.facultyId) return;
-    try {
-      setSaving(true);
-      setSaveMessage(null);
-      await apiPatchJson(`/users/${formState.facultyId}`, { researchCenterId: centerId });
-      await loadData();
-      setSaveMessage("Faculty / Guide assigned to center.");
-    } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to assign member to center");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleGrantGuideRole = async (targetUser: User) => {
-    if (!targetUser) return;
-    try {
-      setSaving(true);
-      setSaveMessage(null);
-      const nextPerms = Array.from(new Set([...(targetUser.permissions || []), "research_guide"]));
-      await apiPatchJson(`/users/${targetUser._id}`, { permissions: nextPerms });
-      await loadData();
-      setSaveMessage(`Granted Research Guide privilege to ${targetUser.name}.`);
-    } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to grant guide privilege");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleRevokeGuideRole = async (targetUser: User) => {
-    if (!targetUser) return;
-    try {
-      setSaving(true);
-      setSaveMessage(null);
-      const nextPerms = (targetUser.permissions || []).filter((p) => p !== "research_guide");
-      const nextRoles = (targetUser.roles || []).filter((r) => r !== "research_guide");
-      if (!nextRoles.includes("faculty")) nextRoles.push("faculty");
-      await apiPatchJson(`/users/${targetUser._id}`, {
-        permissions: nextPerms,
-        role: "faculty",
-        roles: nextRoles,
-      });
-      await loadData();
-      setSaveMessage(`Removed Research Guide privilege from ${targetUser.name}.`);
-    } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to revoke guide privilege");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleRemoveFromCenter = async (targetUser: User) => {
     if (!window.confirm(`Remove ${targetUser.name} from ${center?.name || "this Research Center"}?`)) return;
     try {
-      setSaving(true);
-      setSaveMessage(null);
+      setActionLoading(true);
       await apiPatchJson(`/users/${targetUser._id}`, { researchCenterId: null });
       await loadData();
-      setSaveMessage(`${targetUser.name} removed from Research Center.`);
     } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to remove user from center");
+      alert(err instanceof Error ? err.message : "Failed to remove user from center");
     } finally {
-      setSaving(false);
+      setActionLoading(false);
     }
   };
 
-  const handleScholarAssign = async () => {
-    if (!centerId || !formState.scholarId || !formState.scholarGuideId) return;
+  const handleDeleteUser = async (targetUser: User) => {
+    if (targetUser.role === "library" || targetUser.roles?.includes("library")) {
+      alert("Librarian accounts are protected and cannot be deleted.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to permanently delete user "${targetUser.name}" (${targetUser.email})? This action cannot be undone.`)) {
+      return;
+    }
     try {
-      setSaving(true);
-      setSaveMessage(null);
-      await apiPatchJson(`/users/${formState.scholarId}`, { guideId: formState.scholarGuideId });
+      setActionLoading(true);
+      await apiDelete(`/users/${targetUser._id}`);
       await loadData();
-      setSaveMessage("Scholar assigned to guide.");
     } catch (err) {
-      setSaveMessage(err instanceof Error ? err.message : "Failed to assign scholar");
+      alert(err instanceof Error ? err.message : "Failed to delete user");
     } finally {
-      setSaving(false);
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteCenter = async () => {
+    if (!center) return;
+    if (!window.confirm(`Are you sure you want to permanently delete Research Center "${center.name}"?`)) {
+      return;
+    }
+    try {
+      setActionLoading(true);
+      await apiDelete(`/research-centers/${center._id}`);
+      router.push("/admin/research-centers");
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete research center");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -369,69 +270,62 @@ export default function AdminResearchCenterDetailsPage() {
           ),
           action: (
             <div className="flex items-center justify-end gap-1.5">
-              {isGuide ? (
-                <button
-                  onClick={() => handleRevokeGuideRole(f)}
-                  disabled={saving}
-                  className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-                  title="Remove Research Guide Privilege"
-                >
-                  Revoke Guide
-                </button>
-              ) : (
-                <button
-                  onClick={() => handleGrantGuideRole(f)}
-                  disabled={saving}
-                  className="rounded-full border border-purple-200 bg-purple-50 px-2.5 py-1 text-[11px] font-semibold text-purple-700 hover:bg-purple-100 transition disabled:opacity-50"
-                  title="Grant Research Guide Privilege"
-                >
-                  Grant Guide
-                </button>
-              )}
               <button
                 onClick={() => handleRemoveFromCenter(f)}
-                disabled={saving}
-                className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
+                disabled={actionLoading}
+                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
                 title="Remove from this Research Center"
               >
-                Remove
+                <UserX className="w-3 h-3" /> Unassign Center
+              </button>
+              <button
+                onClick={() => handleDeleteUser(f)}
+                disabled={actionLoading}
+                className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                title="Delete User Permanently"
+              >
+                <Trash2 className="w-3 h-3" /> Delete
               </button>
             </div>
           ),
         };
       }),
-    [faculty, center, saving]
+    [faculty, center, actionLoading]
   );
+
   const guideRows = useMemo(
     () =>
-      guides.map((g) => ({
-        id: g._id,
-        avatar: renderAvatarCell(g),
-        name: g.name,
-        email: g.email,
-        action: (
-          <div className="flex items-center justify-end gap-1.5">
-            <button
-              onClick={() => handleRevokeGuideRole(g)}
-              disabled={saving}
-              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition disabled:opacity-50"
-              title="Remove Research Guide Privilege"
-            >
-              Revoke Guide
-            </button>
-            <button
-              onClick={() => handleRemoveFromCenter(g)}
-              disabled={saving}
-              className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition disabled:opacity-50"
-              title="Remove from this Research Center"
-            >
-              Remove
-            </button>
-          </div>
-        ),
-      })),
-    [guides, center, saving]
+      guides.map((g) => {
+        return {
+          id: g._id,
+          avatar: renderAvatarCell(g),
+          name: g.name,
+          email: g.email,
+          action: (
+            <div className="flex items-center justify-end gap-1.5">
+              <button
+                onClick={() => handleRemoveFromCenter(g)}
+                disabled={actionLoading}
+                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                title="Remove from this Research Center"
+              >
+                <UserX className="w-3 h-3" /> Unassign Center
+              </button>
+              <button
+                onClick={() => handleDeleteUser(g)}
+                disabled={actionLoading}
+                className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+                title="Delete User Permanently"
+              >
+                <Trash2 className="w-3 h-3" /> Delete
+              </button>
+            </div>
+          ),
+        };
+      }),
+    [guides, center, actionLoading]
   );
+
   const scholarRows = useMemo(
     () =>
       scholars.map((s) => ({
@@ -441,9 +335,30 @@ export default function AdminResearchCenterDetailsPage() {
         email: s.email,
         guide: s.guide?.name ?? "Unassigned",
         status: <StatusBadge status={s.status ?? "Active"} />,
+        action: (
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => handleRemoveFromCenter(s)}
+              disabled={actionLoading}
+              className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700 hover:bg-amber-100 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+              title="Remove from this Research Center"
+            >
+              <UserX className="w-3 h-3" /> Unassign Center
+            </button>
+            <button
+              onClick={() => handleDeleteUser(s)}
+              disabled={actionLoading}
+              className="rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-600 hover:bg-red-100 transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
+              title="Delete User Permanently"
+            >
+              <Trash2 className="w-3 h-3" /> Delete
+            </button>
+          </div>
+        ),
       })),
-    [scholars, center]
+    [scholars, center, actionLoading]
   );
+
   const submissionRows = useMemo(
     () =>
       filteredSubmissions.map((sub) => {
@@ -475,7 +390,7 @@ export default function AdminResearchCenterDetailsPage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Research Centers
         </Link>
-        
+
         {loading ? (
           <p className="mt-4 text-sm text-slate-500 animate-pulse">Loading center details...</p>
         ) : error ? (
@@ -492,14 +407,20 @@ export default function AdminResearchCenterDetailsPage() {
                     {center.name}
                   </h2>
                   <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                    <span>Coordinator: <strong className="text-slate-700">{center.coordinator?.name || "Unassigned"}</strong></span>
-                    <span>•</span>
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${center.status === "Active" ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
-                      {center.status}
+                      {center.status} Center
                     </span>
                   </p>
                 </div>
               </div>
+              <button
+                onClick={handleDeleteCenter}
+                disabled={actionLoading}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded-xl text-xs font-bold transition cursor-pointer shadow-xs"
+                title="Delete this Research Center permanently"
+              >
+                <Trash2 className="w-4 h-4" /> Delete Research Center
+              </button>
             </div>
 
             {/* Quick Stats Grid */}
@@ -535,12 +456,6 @@ export default function AdminResearchCenterDetailsPage() {
                 className={`pb-3 transition-colors border-b-2 ${activeTab === "submissions" ? "border-[color:var(--maroon-800)] text-[color:var(--maroon-900)] font-bold" : "border-transparent hover:text-slate-700"}`}
               >
                 Submissions ({filteredSubmissions.length})
-              </button>
-              <button
-                onClick={() => setActiveTab("assign")}
-                className={`pb-3 transition-colors border-b-2 ${activeTab === "assign" ? "border-[color:var(--maroon-800)] text-[color:var(--maroon-900)] font-bold" : "border-transparent hover:text-slate-700"}`}
-              >
-                Assign / Manage Roles
               </button>
             </div>
 
@@ -580,125 +495,6 @@ export default function AdminResearchCenterDetailsPage() {
                 <DataTable columns={submissionColumns} rows={submissionRows} />
               </div>
             )}
-
-            {/* Tab 3: Assign Roles */}
-            {activeTab === "assign" && (
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Assign Faculty / Guide to Center</h4>
-                  <select
-                    className={inputClass}
-                    value={formState.facultyId}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, facultyId: e.target.value }))}
-                  >
-                    <option value="">Select Faculty or Guide</option>
-                    {facultyCandidates.map((f) => {
-                      const isGuideRole = f.permissions?.includes("research_guide") || f.role === "research_guide" || f.roles?.includes("research_guide");
-                      return (
-                        <option key={f._id} value={f._id}>
-                          {f.name} {isGuideRole ? "(Research Guide)" : "(Faculty)"}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <button
-                    onClick={handleFacultyAssign}
-                    disabled={saving}
-                    className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-60"
-                  >
-                    Assign to Center
-                  </button>
-                </div>
-
-                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Manage Research Guide Privilege</h4>
-                  <select
-                    className={inputClass}
-                    value={formState.guideId}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, guideId: e.target.value }))}
-                  >
-                    <option value="">Select Faculty or Guide in Center</option>
-                    {guideCandidates.map((g) => {
-                      const isGuide = g.permissions?.includes("research_guide") || g.role === "research_guide" || g.roles?.includes("research_guide");
-                      return (
-                        <option key={g._id} value={g._id}>
-                          {g.name} {isGuide ? "(Current Guide)" : "(Standard Faculty)"}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  {(() => {
-                    const selectedGuideUser = allUsers.find((u) => u._id === formState.guideId);
-                    if (!selectedGuideUser) {
-                      return (
-                        <button
-                          disabled
-                          className="w-full rounded-full bg-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 cursor-not-allowed opacity-70"
-                        >
-                          Select Member to Manage Privilege
-                        </button>
-                      );
-                    }
-                    const isAlreadyGuide =
-                      selectedGuideUser.permissions?.includes("research_guide") ||
-                      selectedGuideUser.role === "research_guide" ||
-                      selectedGuideUser.roles?.includes("research_guide");
-                    return isAlreadyGuide ? (
-                      <button
-                        onClick={() => handleRevokeGuideRole(selectedGuideUser)}
-                        disabled={saving}
-                        className="w-full rounded-full bg-amber-600 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-700 transition disabled:opacity-60"
-                      >
-                        Revoke Guide Privilege
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleGrantGuideRole(selectedGuideUser)}
-                        disabled={saving}
-                        className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-60"
-                      >
-                        Grant Guide Privilege
-                      </button>
-                    );
-                  })()}
-                </div>
-
-                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/50 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">Assign Scholar to Guide</h4>
-                  <select
-                    className={inputClass}
-                    value={formState.scholarId}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, scholarId: e.target.value }))}
-                  >
-                    <option value="">Select Scholar</option>
-                    {scholarDropdownCandidates.map((s) => (
-                      <option key={s._id} value={s._id}>{s.name}</option>
-                    ))}
-                  </select>
-                  <select
-                    className={inputClass}
-                    value={formState.scholarGuideId}
-                    onChange={(e) => setFormState((prev) => ({ ...prev, scholarGuideId: e.target.value }))}
-                  >
-                    <option value="">Select Guide</option>
-                    {guides.map((g) => (
-                      <option key={g._id} value={g._id}>{g.name}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={handleScholarAssign}
-                    disabled={saving}
-                    className="w-full rounded-full bg-[color:var(--maroon-800)] px-4 py-2 text-xs font-semibold text-white hover:bg-[color:var(--maroon-900)] transition disabled:opacity-60"
-                  >
-                    Link Scholar to Guide
-                  </button>
-                </div>
-
-                {saveMessage && (
-                  <p className="col-span-full text-xs font-medium text-emerald-600 mt-2">{saveMessage}</p>
-                )}
-              </div>
-            )}
           </div>
         ) : null}
       </section>
@@ -710,3 +506,4 @@ export default function AdminResearchCenterDetailsPage() {
     </PageLayout>
   );
 }
+

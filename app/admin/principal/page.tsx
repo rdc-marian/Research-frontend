@@ -7,12 +7,12 @@ import { getIncentives, updateIncentiveStatus, deleteIncentive, IncentiveApplica
 import { useAuth } from "@/components/AuthProvider";
 import { ProfileImageModal, type ProfileUser } from "@/components/ProfileImageModal";
 import { IncentiveProofModal } from "@/components/IncentiveProofModal";
-import { CheckCircle, Clock, FileText, IndianRupee, X, Eye, ArrowRight, ShieldCheck, XCircle, Trash2, Paperclip, ExternalLink } from "lucide-react";
+import { CheckCircle, Clock, FileText, IndianRupee, X, Eye, ShieldCheck, XCircle, Trash2, Paperclip } from "lucide-react";
 
-export default function AdminIncentives() {
+export default function PrincipalApprovals() {
   const { user } = useAuth();
   const [incentives, setIncentives] = useState<IncentiveApplication[]>([]);
-  const [activeTab, setActiveTab] = useState<"Admin" | "History">("Admin");
+  const [activeTab, setActiveTab] = useState<"Pending" | "History">("Pending");
   const [selectedProfileUser, setSelectedProfileUser] = useState<ProfileUser | null>(null);
   const [selectedProofItem, setSelectedProofItem] = useState<IncentiveApplication | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -30,13 +30,10 @@ export default function AdminIncentives() {
     fetchIncentives();
   }, []);
 
-  const handleAction = async (id: string, action: "ApproveAdmin" | "Reject") => {
+  const handleAction = async (id: string, action: "ApprovePrincipal" | "Reject") => {
     try {
       setActionLoading(id);
-      let newStatus: IncentiveStatus = "Pending Admin";
-      if (action === "Reject") newStatus = "Rejected";
-      else if (action === "ApproveAdmin") newStatus = "Pending Principal";
-
+      let newStatus: IncentiveStatus = action === "ApprovePrincipal" ? "Approved" : "Rejected";
       await updateIncentiveStatus(id, newStatus);
       await fetchIncentives();
     } catch (err) {
@@ -64,7 +61,7 @@ export default function AdminIncentives() {
   };
 
   const getFilteredList = () => {
-    if (activeTab === "Admin") return incentives.filter((i) => i.status === "Pending Admin");
+    if (activeTab === "Pending") return incentives.filter((i) => i.status === "Pending Principal");
     if (activeTab === "History")
       return incentives.filter((i) => i.status === "Approved" || i.status === "Paid" || i.status === "Rejected");
     return [];
@@ -72,23 +69,23 @@ export default function AdminIncentives() {
 
   const list = getFilteredList();
 
-  const pendingAdminCount = incentives.filter((i) => i.status === "Pending Admin").length;
+  const pendingCount = incentives.filter((i) => i.status === "Pending Principal").length;
   const historyCount = incentives.filter((i) => i.status === "Approved" || i.status === "Paid" || i.status === "Rejected").length;
 
   return (
     <PageLayout
-      title="Incentives Verification"
-      userName={user?.name || "Admin"}
-      roleLabel="Administrator"
+      title="Principal Approvals"
+      userName={user?.name || "Principal"}
+      roleLabel="Principal / Executive Administrator"
       navItems={adminNav}
-      activeItem="Incentives"
+      activeItem="Principal Approvals"
     >
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 font-display">Incentives Verification</h2>
+            <h2 className="text-xl font-bold text-slate-900 font-display">Principal Incentive Approvals</h2>
             <p className="text-sm text-slate-500 mt-0.5">
-              Verify faculty research incentive applications, inspect attached proof documents, and forward requests to Principal.
+              Review research incentive applications, inspect supporting files, and grant final sanctions.
             </p>
           </div>
         </div>
@@ -96,16 +93,16 @@ export default function AdminIncentives() {
         {/* Tab Switcher */}
         <div className="flex border-b border-slate-200 gap-4 mb-6">
           <button
-            onClick={() => setActiveTab("Admin")}
+            onClick={() => setActiveTab("Pending")}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold border-b-2 transition ${
-              activeTab === "Admin"
+              activeTab === "Pending"
                 ? "border-[#9B0302] text-[#9B0302] font-bold"
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            <span>Admin Verification</span>
-            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "Admin" ? "bg-[#9B0302] text-white" : "bg-slate-100 text-slate-600"}`}>
-              {pendingAdminCount}
+            <span>Pending Principal Approvals</span>
+            <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "Pending" ? "bg-[#9B0302] text-white" : "bg-slate-100 text-slate-600"}`}>
+              {pendingCount}
             </span>
           </button>
           <button
@@ -116,7 +113,7 @@ export default function AdminIncentives() {
                 : "border-transparent text-slate-500 hover:text-slate-800"
             }`}
           >
-            <span>History & Records</span>
+            <span>History & Past Decisions</span>
             <span className={`text-xs px-2 py-0.5 rounded-full ${activeTab === "History" ? "bg-[#9B0302] text-white" : "bg-slate-100 text-slate-600"}`}>
               {historyCount}
             </span>
@@ -133,8 +130,8 @@ export default function AdminIncentives() {
                   <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Category</th>
                   <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Application Details</th>
                   <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Attached File</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Requested Amount</th>
+                  <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date Applied</th>
                   <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="p-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                 </tr>
@@ -225,12 +222,12 @@ export default function AdminIncentives() {
                         )}
                       </td>
 
-                      {/* Amount */}
+                      {/* Amount Requested */}
                       <td className="p-4 whitespace-nowrap">
                         <span className="text-sm font-bold text-slate-900">₹{inc.amountRequested.toLocaleString("en-IN")}</span>
                       </td>
 
-                      {/* Date */}
+                      {/* Date Applied */}
                       <td className="p-4 text-xs text-slate-500 whitespace-nowrap">
                         {new Date(inc.dateApplied).toLocaleDateString("en-GB")}
                       </td>
@@ -255,21 +252,21 @@ export default function AdminIncentives() {
                       {/* Actions */}
                       <td className="p-4 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
-                          {activeTab === "Admin" && (
+                          {activeTab === "Pending" && (
                             <>
                               <button
-                                onClick={() => handleAction(inc.id, "ApproveAdmin")}
+                                onClick={() => handleAction(inc.id, "ApprovePrincipal")}
                                 disabled={actionLoading === inc.id}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition shadow-xs disabled:opacity-60 cursor-pointer"
                               >
-                                Forward to Principal <ArrowRight className="w-3 h-3" />
+                                <ShieldCheck className="w-3.5 h-3.5" /> Approve Incentive
                               </button>
                               <button
                                 onClick={() => handleAction(inc.id, "Reject")}
                                 disabled={actionLoading === inc.id}
                                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg hover:bg-amber-200 transition disabled:opacity-60 cursor-pointer"
                               >
-                                Reject
+                                <XCircle className="w-3.5 h-3.5" /> Reject
                               </button>
                             </>
                           )}
@@ -290,7 +287,7 @@ export default function AdminIncentives() {
                 {list.length === 0 && (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-slate-500 text-sm">
-                      No incentive applications found in this tab.
+                      No applications found in this tab.
                     </td>
                   </tr>
                 )}
@@ -318,5 +315,4 @@ export default function AdminIncentives() {
     </PageLayout>
   );
 }
-
 

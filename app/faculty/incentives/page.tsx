@@ -5,7 +5,8 @@ import { PageLayout } from "@/components/PageLayout";
 import { DashboardCards } from "@/components/DashboardCards";
 import { facultyNav } from "@/data/roleNav";
 import { getIncentives, createIncentive, IncentiveApplication, IncentiveCategory } from "@/lib/mockIncentives";
-import { Plus, IndianRupee, Clock, CheckCircle, FileText, X } from "lucide-react";
+import { downloadIncentiveSanctionPDF } from "@/lib/generateIncentivePDF";
+import { Plus, IndianRupee, Clock, CheckCircle, FileText, X, Download } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
 export default function FacultyIncentives() {
@@ -138,6 +139,7 @@ export default function FacultyIncentives() {
               <th className="p-4 text-xs font-bold text-slate-500 uppercase">Amount</th>
               <th className="p-4 text-xs font-bold text-slate-500 uppercase">Date Applied</th>
               <th className="p-4 text-xs font-bold text-slate-500 uppercase">Status</th>
+              <th className="p-4 text-xs font-bold text-slate-500 uppercase text-right">Sanction Voucher</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
@@ -160,7 +162,7 @@ export default function FacultyIncentives() {
                     </div>
                   )}
                 </td>
-                <td className="p-4 text-sm font-semibold text-slate-900">₹{inc.amountRequested}</td>
+                <td className="p-4 text-sm font-semibold text-slate-900">₹{inc.amountRequested.toLocaleString("en-IN")}</td>
                 <td className="p-4 text-sm text-slate-500">{new Date(inc.dateApplied).toLocaleDateString()}</td>
                 <td className="p-4 text-sm">
                   <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider ${
@@ -172,10 +174,23 @@ export default function FacultyIncentives() {
                     {inc.status}
                   </span>
                 </td>
+                <td className="p-4 text-right">
+                  {(inc.status === "Approved" || inc.status === "Paid") ? (
+                    <button
+                      onClick={() => downloadIncentiveSanctionPDF(inc, user)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#9B0302] text-white text-xs font-semibold rounded-lg hover:bg-[#800201] transition shadow-xs cursor-pointer"
+                      title="Download official approved sanction voucher PDF for college office collection"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download Sanction PDF
+                    </button>
+                  ) : (
+                    <span className="text-xs text-slate-400 font-normal">Pending Approval</span>
+                  )}
+                </td>
               </tr>
             ))}
             {incentives.length === 0 && (
-              <tr><td colSpan={6} className="p-8 text-center text-slate-500">No applications found.</td></tr>
+              <tr><td colSpan={7} className="p-8 text-center text-slate-500">No applications found.</td></tr>
             )}
           </tbody>
         </table>

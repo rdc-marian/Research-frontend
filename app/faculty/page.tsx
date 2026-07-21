@@ -18,6 +18,7 @@ import {
   Upload,
   Check,
   Eye,
+  FolderOpen,
 } from "lucide-react";
 import { DashboardCards } from "@/components/DashboardCards";
 import { PageLayout } from "@/components/PageLayout";
@@ -141,8 +142,8 @@ export default function FacultyDashboard() {
         if (isCoordinator) {
           const centerId = user.researchCenter?._id || (typeof user.researchCenter === "string" ? user.researchCenter : "");
           promises.push(
-            apiGet<ApiListResponse<any>>(`/submissions?researchCenterId=${centerId}`),
-            apiGet<ApiListResponse<any>>(`/leaves?researchCenterId=${centerId}`),
+            apiGet<{ items: any[] }>(`/research-centers/${centerId}/documents`).catch(() => null),
+            Promise.resolve(null),
             apiGet<ApiListResponse<any>>("/research-centers")
           );
         } else {
@@ -153,8 +154,8 @@ export default function FacultyDashboard() {
           scholarsRes,
           portfolioApprovalsRes,
           pendingLeavesRes,
-          coordinatorSubmissionsRes,
-          coordinatorLeavesRes,
+          centerDocsRes,
+          _unused,
           researchCentersRes
         ] = await Promise.all(promises);
 
@@ -176,14 +177,24 @@ export default function FacultyDashboard() {
           ]);
         }
 
-        if (isCoordinator && coordinatorSubmissionsRes) {
+        if (isCoordinator) {
           const centerId = user.researchCenter?._id || (typeof user.researchCenter === "string" ? user.researchCenter : "");
           const firstCenter = researchCentersRes?.items.find((d: any) => d._id === centerId || d.coordinator?._id === user._id) || researchCentersRes?.items[0] || null;
-          const pendingCoordLeaves = coordinatorLeavesRes ? coordinatorLeavesRes.items.filter((l: any) => l.status === "ApprovedByGuide").length : 0;
+
+          let docsCount = centerDocsRes?.items?.length ?? 0;
+          if (typeof window !== "undefined" && centerId && (!centerDocsRes || !centerDocsRes.items)) {
+            try {
+              const saved = localStorage.getItem(`center_docs_${centerId}`);
+              if (saved) {
+                docsCount = JSON.parse(saved).length;
+              }
+            } catch (e) {
+              docsCount = 0;
+            }
+          }
 
           setCoordinatorMetrics([
-            { label: "Research Center Submissions", value: `${coordinatorSubmissionsRes.items.length}`, icon: FileText },
-            { label: "Pending Center Leaves", value: `${pendingCoordLeaves}`, icon: Calendar },
+            { label: "Research Center Document", value: `${docsCount}`, icon: FolderOpen },
             { label: "Research Center", value: firstCenter?.name || user.researchCenter?.name || "MCA", icon: NotebookText },
           ]);
         }

@@ -2,12 +2,12 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, X, Eye } from "lucide-react";
+import { ArrowLeft, Check, X, Eye, Trash2 } from "lucide-react";
 import { PageLayout } from "@/components/PageLayout";
 import { DataTable } from "@/components/Table";
 import { StatusBadge } from "@/components/StatusBadge";
 import { adminNav } from "@/data/roleNav";
-import { apiGet, apiPatchJson, type ApiListResponse } from "@/lib/api";
+import { apiGet, apiPatchJson, apiDelete, type ApiListResponse } from "@/lib/api";
 import { useAuth } from "@/components/AuthProvider";
 
 type LeaveItem = {
@@ -99,6 +99,21 @@ export default function AdminLeavesPage() {
     }
   };
 
+  const handleDeleteLeave = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this leave record? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      setProcessing(true);
+      await apiDelete(`/leaves/${id}`);
+      loadLeaves();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to delete leave request");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const columns = [
     { key: "scholar", label: "Scholar Name" },
     { key: "researchCenter", label: "Research Center" },
@@ -133,13 +148,13 @@ export default function AdminLeavesPage() {
         </div>
       ),
       action: (
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end items-center gap-2">
           {item.document?.url ? (
             <a
               href={item.document.url}
               target="_blank"
               rel="noreferrer"
-              className="p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full"
+              className="p-1 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full cursor-pointer"
               title="View Leave Proof"
             >
               <Eye className="h-4 w-4" />
@@ -152,7 +167,7 @@ export default function AdminLeavesPage() {
                   setSelectedLeave(item);
                   setActionStatus("ApprovedByCoordinator");
                 }}
-                className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-full"
+                className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-full cursor-pointer"
                 title="Final Approve Leave"
               >
                 <Check className="h-4 w-4" />
@@ -162,13 +177,21 @@ export default function AdminLeavesPage() {
                   setSelectedLeave(item);
                   setActionStatus("Rejected");
                 }}
-                className="p-1 text-rose-600 hover:text-rose-800 hover:bg-rose-50 rounded-full"
+                className="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-full cursor-pointer"
                 title="Reject Leave"
               >
                 <X className="h-4 w-4" />
               </button>
             </>
           ) : null}
+          <button
+            onClick={() => handleDeleteLeave(item._id)}
+            className="px-2.5 py-1 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg flex items-center gap-1 text-xs font-semibold cursor-pointer transition shadow-xs"
+            title="Delete Leave Record"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Delete</span>
+          </button>
         </div>
       ),
     }));

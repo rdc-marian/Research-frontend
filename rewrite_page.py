@@ -273,7 +273,7 @@ if match:
           <BookOpen className="w-5 h-5 text-white/50" />
           <span className="font-display font-bold text-lg tracking-tight text-white/80">MarianResearch</span>
         </div>
-        <p className="text-sm">© {new Date().getFullYear()} Marian College Kuttikkanam (Autonomous). All rights reserved.</p>
+        <p className="text-sm">© {new Date().getFullYear()} Marian College Kuttikkanam Autonomous. All rights reserved.</p>
         <p className="text-xs mt-2 text-slate-500">Excellence in Research & Innovation</p>
       </footer>
 

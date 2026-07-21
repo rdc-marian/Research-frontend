@@ -69,7 +69,6 @@ export function PageLayout({
 
     if (isCoordinator) {
       dynamicNav.push({ label: "Center Documents", icon: FolderOpen, href: "/faculty/center-documents" });
-      dynamicNav.push({ label: "Center Leaves", icon: Calendar, href: "/faculty/leaves" });
     }
 
     dynamicNav.push({ label: "Reports", icon: NotebookText, href: "/faculty/reports" });
