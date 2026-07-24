@@ -24,7 +24,7 @@ import { useAuth, type User } from "@/components/AuthProvider";
 export default function Home() {
   const router = useRouter();
   const { login } = useAuth();
-  
+
   // App states
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,16 +34,16 @@ export default function Home() {
     totalScholars: 0,
     totalGuides: 0
   });
-  
+
   // Modals state
   const [showLoginModal, setShowLoginModal] = useState(false);
-  
+
   // Login input states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginRole, setLoginRole] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
-  
+
   // Modal mode: "login" or "register"
   const [modalMode, setModalMode] = useState<"login" | "register">("login");
   const [availableDepartments, setAvailableDepartments] = useState<{ _id: string; name: string }[]>([]);
@@ -195,7 +195,7 @@ export default function Home() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
-    
+
     if (!email || !password || !loginRole) {
       setLoginError("Please enter email, password, and select a role.");
       return;
@@ -236,7 +236,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-body selection:bg-[#9B0302]/20 selection:text-[#9B0302] overflow-x-hidden">
-      
+
       {/* Navbar */}
       <nav className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 max-w-7xl mx-auto w-full z-10 sticky top-0 bg-slate-50/80 backdrop-blur-md border-b border-slate-200/50">
         <div className="flex items-center gap-3">
@@ -252,16 +252,15 @@ export default function Home() {
         <div className="relative w-full overflow-hidden">
           {/* Background Hero Image Carousel */}
           {bgImages.map((src, index) => (
-            <div 
+            <div
               key={src}
-              className={`absolute inset-0 z-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out pointer-events-none ${
-                index === bgIndex ? "opacity-[0.12]" : "opacity-0"
-              }`}
+              className={`absolute inset-0 z-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out pointer-events-none ${index === bgIndex ? "opacity-[0.12]" : "opacity-0"
+                }`}
               style={{ backgroundImage: `url('${src.replace(/ /g, "%20")}')` }}
             />
           ))}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[300px] sm:w-[600px] bg-red-100/50 rounded-full blur-[120px] z-0 pointer-events-none"></div>
-          
+
           {/* Hero Content Section (Centered and restricted max-w-7xl) */}
           <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 pt-24 pb-28 sm:pt-32 sm:pb-36 lg:pt-40 lg:pb-48 flex flex-col items-center justify-center text-center min-h-[60vh] sm:min-h-[70vh] lg:min-h-[80vh] z-10">
             <div className="relative flex flex-col items-center text-center w-full">
@@ -269,18 +268,18 @@ export default function Home() {
                 <Sparkles className="w-3.5 h-3.5" />
                 <span>Excellence in Research & Innovation</span>
               </div>
-              
+
               <h1 className="font-display text-3xl sm:text-5xl md:text-7xl font-bold text-slate-900 leading-[1.1] tracking-tight max-w-4xl mb-6">
                 Pioneering <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#9B0302] to-[#e63946]">Discoveries</span> for a Better Tomorrow
               </h1>
-              
+
               <p className="text-sm sm:text-base md:text-lg text-slate-600 max-w-2xl leading-relaxed mb-8 sm:mb-10">
                 Welcome to the MarianResearch portal. Explore the cutting-edge academic achievements, funded projects, and publications from our esteemed scholars and research guides.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto px-4 sm:px-0 justify-center">
                 <button onClick={() => { setShowLoginModal(true); setModalMode("register"); }} className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#9B0302] text-white font-semibold text-sm hover:bg-[#800201] transition-all shadow-lg shadow-[#9B0302]/30 hover:-translate-y-0.5">
-                  Request Access
+                  Sign up
                 </button>
                 <button onClick={() => { setShowLoginModal(true); setModalMode("login"); }} className="w-full sm:w-auto px-8 py-4 rounded-full bg-white border border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 transition-all shadow-sm hover:-translate-y-0.5">
                   Login
@@ -353,7 +352,7 @@ export default function Home() {
       {showLoginModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
           <div className="w-full max-w-md rounded-3xl bg-white p-6 sm:p-8 shadow-[0_20px_50px_rgba(155,3,2,0.12)] border border-slate-100 animate-in zoom-in-95 duration-200 relative max-h-[95vh] overflow-y-auto">
-            
+
             <button
               onClick={() => handleCloseModal()}
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-full transition-all active:scale-95"
@@ -376,7 +375,7 @@ export default function Home() {
                 {modalMode === "login" ? "Sign in to access your research dashboard" : "Submit a request to the administrator"}
               </p>
             </div>
-            
+
             {modalMode === "register" && regSuccess ? (
               <div className="text-center py-6">
                 <div className="mx-auto w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mb-4 border border-emerald-100">

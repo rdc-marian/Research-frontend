@@ -38,8 +38,14 @@ export interface IncentiveApplication {
   
   // Registration fields
   eventName?: string;
-  eventType?: string; // Conference, Workshop, etc.
   proofImage?: string; // Uploaded proof as base64 string
+  eventType?: string; // Conference, Workshop, etc.
+  // Reviewer details & notes
+  libraryNote?: string;
+  guideNote?: string;
+  adminNote?: string;
+  principalNote?: string;
+  reviewedBy?: any[];
 }
 
 /**
@@ -77,6 +83,11 @@ export const getIncentives = async (): Promise<IncentiveApplication[]> => {
       eventName: item.eventName,
       eventType: item.eventType,
       proofImage: item.proofImage,
+      libraryNote: item.libraryNote,
+      guideNote: item.guideNote,
+      adminNote: item.adminNote,
+      principalNote: item.principalNote,
+      reviewedBy: item.reviewedBy,
     };
   });
 };
